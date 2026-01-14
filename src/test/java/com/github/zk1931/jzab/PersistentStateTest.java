@@ -40,7 +40,7 @@ public class PersistentStateTest extends TestBase {
   @Test
   public void testEmpty() throws IOException {
     // Test for empty directory.
-    PersistentState persistence = new PersistentState(getDirectory());
+    PersistentState persistence = new PersistentState(getDirectory().toFile());
     Assert.assertEquals(true, persistence.isEmpty());
     Assert.assertEquals(Zxid.ZXID_NOT_EXIST,
                         persistence.getLog().getLatestZxid());
@@ -52,7 +52,7 @@ public class PersistentStateTest extends TestBase {
   @Test
   public void testReadWrite() throws IOException {
     // Test Read/Write log.
-    PersistentState persistence = new PersistentState(getDirectory());
+    PersistentState persistence = new PersistentState(getDirectory().toFile());
     persistence.setProposedEpoch(2);
     persistence.setAckEpoch(3);
     Transaction txn = new Transaction(new Zxid(0, 0),
@@ -73,7 +73,7 @@ public class PersistentStateTest extends TestBase {
   @Test
   public void testRestore() throws IOException {
     // Test restore from a log.
-    PersistentState persistence = new PersistentState(getDirectory());
+    PersistentState persistence = new PersistentState(getDirectory().toFile());
     persistence.setProposedEpoch(2);
     persistence.setAckEpoch(3);
     Transaction txn = new Transaction(new Zxid(0, 0),
@@ -84,7 +84,7 @@ public class PersistentStateTest extends TestBase {
     persistence.setLastSeenConfig(cnf);
 
     // Recovers.
-    persistence = new PersistentState(getDirectory());
+    persistence = new PersistentState(getDirectory().toFile());
     Assert.assertEquals(2, persistence.getProposedEpoch());
     Assert.assertEquals(3, persistence.getAckEpoch());
     Assert.assertEquals(new Zxid(0, 0), persistence.getLog().getLatestZxid());
@@ -96,7 +96,7 @@ public class PersistentStateTest extends TestBase {
 
   @Test
   public void testStateTransfering() throws IOException {
-    PersistentState persistence = new PersistentState(getDirectory());
+    PersistentState persistence = new PersistentState(getDirectory().toFile());
     appendTxns(persistence.getLog(), new Zxid(0, 0), 2);
     Assert.assertEquals(new Zxid(0, 1), persistence.getLatestZxid());
     /*
@@ -116,7 +116,7 @@ public class PersistentStateTest extends TestBase {
     // Ends state transferring.
     persistence.endStateTransfer();
     // Restores state.
-    persistence = new PersistentState(getDirectory());
+    persistence = new PersistentState(getDirectory().toFile());
     // Make sure the appended txns show up.
     Assert.assertEquals(new Zxid(0, 99), persistence.getLatestZxid());
 
@@ -137,7 +137,7 @@ public class PersistentStateTest extends TestBase {
     Assert.assertEquals(new Zxid(0, 9), persistence.getLatestZxid());
     // But we'll not call endStateTransfering, the intermediate result will be
     // discarded.
-    persistence = new PersistentState(getDirectory());
+    persistence = new PersistentState(getDirectory().toFile());
     // Still show old data.
     Assert.assertEquals(new Zxid(0, 99), persistence.getLatestZxid());
 
@@ -165,7 +165,7 @@ public class PersistentStateTest extends TestBase {
     Set<String> peers = new HashSet<String>();
     ClusterConfiguration cnf =
       new ClusterConfiguration(new Zxid(0, -1), peers, "");
-    PersistentState persistence = new PersistentState(getDirectory());
+    PersistentState persistence = new PersistentState(getDirectory().toFile());
     persistence.setLastSeenConfig(cnf);
     cnf = new ClusterConfiguration(new Zxid(0, 1), peers, "");
     persistence.setLastSeenConfig(cnf);
@@ -176,7 +176,7 @@ public class PersistentStateTest extends TestBase {
 
   @Test
   public void testCleanupClusterConfigFiles() throws IOException {
-    PersistentState persistence = new PersistentState(getDirectory());
+    PersistentState persistence = new PersistentState(getDirectory().toFile());
     Set<String> peers = new HashSet<String>();
     ClusterConfiguration cnf =
       new ClusterConfiguration(new Zxid(0, -1), peers, "");
@@ -211,7 +211,7 @@ public class PersistentStateTest extends TestBase {
 
   @Test
   public void testLastConfig() throws IOException {
-    PersistentState persistence = new PersistentState(getDirectory());
+    PersistentState persistence = new PersistentState(getDirectory().toFile());
     Set<String> peers = new HashSet<String>();
     ClusterConfiguration cnf =
       new ClusterConfiguration(new Zxid(0, 1), peers, "");

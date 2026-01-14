@@ -30,7 +30,7 @@ import org.junit.Test;
 public class FileUtilsTest extends TestBase {
   @Test
   public void testReadWriteLong() throws IOException {
-    File file = new File(getDirectory(), "test");
+    File file = getDirectory().resolve("test").toFile();
     for (int i = 0; i < 10; i++) {
       FileUtils.writeLongToFile(i, file);
       Assert.assertEquals(i, FileUtils.readLongFromFile(file));
@@ -39,6 +39,7 @@ public class FileUtilsTest extends TestBase {
 
   @Test(expected=FileNotFoundException.class)
   public void testFileNotFound() throws IOException {
-    FileUtils.readLongFromFile(new File(getDirectory(), "missing"));
+    File file = getDirectory().resolve("missing").toFile();
+    FileUtils.readLongFromFile(file);
   }
 }

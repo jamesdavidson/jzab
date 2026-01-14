@@ -67,7 +67,7 @@ public class SyncProposalProcessorTest extends TestBase {
   }
 
   Log getLog(String subdir) throws Exception {
-    File fSub = new File(getDirectory(), subdir);
+    File fSub = new File(getDirectory().toFile(), subdir);
     fSub.mkdir();
     File f = new File(fSub, this.fileName);
     if (logClass == (Class<?>)RollingLog.class) {
@@ -117,7 +117,7 @@ public class SyncProposalProcessorTest extends TestBase {
     Log log = getLog(String.format("%d_%d_%d_%d", epoch, transactionSize,
                                    numTransactions, batchSize));
     PersistentState persistence =
-      new PersistentState(getDirectory(), log);
+      new PersistentState(getDirectory().toFile(), log);
     TestReceiver receiver = new TestReceiver();
     Transport transport = new NettyTransport(leader, receiver, getDirectory());
     ClusterConfiguration cnf =

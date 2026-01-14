@@ -503,7 +503,7 @@ public class Zab {
       this.transport = new NettyTransport(serverId,
                                           this,
                                           config.getSslParameters(),
-                                          persistence.getLogDir());
+                                          persistence.getLogDir().toPath());
 
       election = new FastLeaderElection(persistence, transport, messageQueue);
 

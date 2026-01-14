@@ -51,6 +51,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.List;
@@ -94,7 +95,7 @@ class NettyTransport extends Transport {
   private final char[] trustStorePassword;
   private SSLContext clientContext;
   private SSLContext serverContext;
-  private final File dir;
+  private final Path dir;
 
   // remote id => sender map.
   ConcurrentMap<String, Sender> senders = new ConcurrentHashMap<>();
@@ -104,7 +105,7 @@ class NettyTransport extends Transport {
     new ConcurrentHashMap<>();
 
   public NettyTransport(String hostPort, final Receiver receiver,
-                        final File dir)
+                        final Path dir)
       throws InterruptedException, GeneralSecurityException, IOException {
     this(hostPort, receiver, new ZabConfig.SslParameters(), dir);
   }
@@ -120,7 +121,7 @@ class NettyTransport extends Transport {
    */
   public NettyTransport(String hostPort, final Receiver receiver,
                         ZabConfig.SslParameters sslParam,
-                        final File dir)
+                        final Path dir)
       throws InterruptedException, GeneralSecurityException, IOException {
     super(receiver);
     this.keyStore = sslParam.getKeyStore();
@@ -333,7 +334,7 @@ class NettyTransport extends Transport {
       final FileOutputStream fout;
 
       public FileReceiver(long length) throws IOException {
-        this.file = File.createTempFile("transport", "", dir);
+        this.file = File.createTempFile("transport", "", dir.toFile());
         this.fileLength = length;
         this.fout = new FileOutputStream(this.file);
       }

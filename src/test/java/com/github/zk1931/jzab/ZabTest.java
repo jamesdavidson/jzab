@@ -1952,7 +1952,7 @@ public class ZabTest extends TestBase  {
     peers.add(server2);
 
     ZabConfig config1 = new ZabConfig();
-    config1.setLogDir(new File(getDirectory(), server1).getPath());
+    config1.setLogDir(new File(getDirectory().toFile(), server1).getPath());
     Zab zab1 = new Zab(st, config1, server1, peers);
 
     zab1.send(ByteBuffer.wrap("HelloWorld".getBytes()), null);

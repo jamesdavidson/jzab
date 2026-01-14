@@ -151,7 +151,7 @@ public class SnapshotTest extends TestBase {
 
     ZabConfig config = new ZabConfig();
     // For testing purpose, set the threshold to 32 bytes..
-    config.setLogDir(getDirectory().getPath());
+    config.setLogDir(getDirectory().toFile().getPath());
 
     Zab zab = new Zab(st1, config, server, server);
     st1.waitMemberChanged();
@@ -187,8 +187,8 @@ public class SnapshotTest extends TestBase {
 
     ZabConfig config1 = new ZabConfig();
     ZabConfig config2 = new ZabConfig();
-    config1.setLogDir(getDirectory().getPath() + File.separator + server1);
-    config2.setLogDir(getDirectory().getPath() + File.separator + server2);
+    config1.setLogDir(getDirectory().toFile().getPath() + File.separator + server1);
+    config2.setLogDir(getDirectory().toFile().getPath() + File.separator + server2);
 
     Zab zab1 = new Zab(st1, config1, server1, server1);
     st1.waitMemberChanged();
@@ -242,9 +242,9 @@ public class SnapshotTest extends TestBase {
     String server2 = getUniqueHostPort();
 
     ZabConfig config1 = new ZabConfig();
-    config1.setLogDir(getDirectory().getPath() + File.separator + server1);
+    config1.setLogDir(getDirectory().toFile().getPath() + File.separator + server1);
     ZabConfig config2 = new ZabConfig();
-    config2.setLogDir(getDirectory().getPath() + File.separator + server2);
+    config2.setLogDir(getDirectory().toFile().getPath() + File.separator + server2);
 
     Zab zab1 = new Zab(st1, config1, server1, server1);
     st1.waitMemberChanged();
