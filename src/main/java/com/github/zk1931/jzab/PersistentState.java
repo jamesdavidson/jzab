@@ -368,11 +368,11 @@ class PersistentState {
 //    try (FileChannel channel = FileChannel.open(this.rootDir.toPath())) {
 //      channel.force(true);
 //    }
-    try {
-      Thread.sleep(50);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+//    try {
+//      Thread.sleep(100);
+//    } catch (InterruptedException e) {
+//      throw new RuntimeException(e);
+//    }
   }
 
   /**
