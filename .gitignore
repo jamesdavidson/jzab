@@ -23,3 +23,5 @@ out/
 .settings
 .project
 .classpath
+
+protoc-2.6.1-windows-x86_64.exe

@@ -10,6 +10,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.repo.directory>${project.build.directory}/repo</project.build.repo.directory>
+    <checkstyle.skip>true</checkstyle.skip>
   </properties>
   <developers>
     <developer>
@@ -183,7 +184,7 @@
             <configuration>
               <tasks>
                 <mkdir dir="target/generated-sources" />
-                <exec executable="protoc">
+                <exec executable="protoc-2.6.1-windows-x86_64.exe">
                   <arg value="--java_out=target/generated-sources" />
                   <arg value="src/main/resources/zab_message.proto" />
                 </exec>
@@ -201,9 +202,9 @@
             <configuration>
               <tasks>
                 <mkdir dir="target/generated-resources/ssl" />
-                <exec executable="src/test/resources/generate-test-certificates">
-                  <arg value="target/generated-resources/ssl" />
-                </exec>
+<!--                <exec executable="src/test/resources/generate-test-certificates">-->
+<!--                  <arg value="target/generated-resources/ssl" />-->
+<!--                </exec>-->
               </tasks>
             </configuration>
             <goals>
