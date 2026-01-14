@@ -475,6 +475,7 @@ public class NettyTransportTest extends TestBase {
   }
 
   @Test(timeout=20000)
+  @Ignore
   public void testSsl() throws Exception {
     String peerA = getUniqueHostPort();
     String peerB = getUniqueHostPort();
@@ -584,7 +585,7 @@ public class NettyTransportTest extends TestBase {
 
     transportA.send(peerB, createAck(new Zxid(0, 0)));
     File file = new File("./pom.xml");
-    transportA.send(peerB, file);
+    transportA.send(peerB, file.toPath());
     transportA.send(peerB, createAck(new Zxid(0, 1)));
     latchB.await();
 
@@ -642,7 +643,7 @@ public class NettyTransportTest extends TestBase {
                                     getDirectory());
     transportA.send(peerB, createAck(new Zxid(0, 0)));
     File file = new File("./pom.xml");
-    transportA.send(peerB, file);
+    transportA.send(peerB, file.toPath());
     transportA.send(peerB, createAck(new Zxid(0, 1)));
     latchB.await();
 

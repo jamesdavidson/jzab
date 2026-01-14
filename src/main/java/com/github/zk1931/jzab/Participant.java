@@ -681,7 +681,7 @@ abstract class Participant {
         // Sends snapshot message.
         transport.send(peerId, snapshot);
         // Sends actuall snapshot file.
-        transport.send(peerId, snapFile);
+        transport.send(peerId, snapFile.toPath());
         // Start synchronizing from the zxid right after snapshot.
         syncPoint = new Zxid(snapZxid.getEpoch(), snapZxid.getXid() + 1);
       } else {

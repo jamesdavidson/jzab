@@ -51,6 +51,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.List;
@@ -446,7 +447,7 @@ class NettyTransport extends Transport {
   }
 
   @Override
-  public void send(final String destination, File file) {
+  public void send(final String destination, Path file) {
     if (destination.equals(hostPort)) {
       LOG.error("Can't send file to itself.");
       throw new RuntimeException("Can't send file to itself.");
@@ -596,7 +597,10 @@ class NettyTransport extends Transport {
             ByteBuffer buf = (ByteBuffer)req;
             channel.writeAndFlush(Unpooled.wrappedBuffer(buf));
           } else if (req instanceof File) {
-            File file = (File)req;
+            File file = (File) req;
+            sendFile(file);
+          } else if (req instanceof Path) {
+            File file = ((Path) req).toFile();
             sendFile(file);
           } else if (req instanceof Shutdown) {
             LOG.debug("Got shutdown request.");

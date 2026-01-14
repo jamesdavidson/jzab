@@ -19,6 +19,7 @@
 package com.github.zk1931.jzab;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Iterator;
 import com.github.zk1931.jzab.proto.ZabMessage.Message;
 
@@ -57,7 +58,7 @@ abstract class Transport {
    * @param destination the id of the message destination
    * @param  file the file to be sent
    */
-  public abstract void send(String destination, File file);
+  public abstract void send(String destination, Path file);
 
   /**
    * Clears the connection to the destination. If there is no connection to the
