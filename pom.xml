@@ -184,7 +184,7 @@
             <configuration>
               <tasks>
                 <mkdir dir="target/generated-sources" />
-                <exec executable="protoc-2.6.1-windows-x86_64.exe">
+                <exec executable="protoc">
                   <arg value="--java_out=target/generated-sources" />
                   <arg value="src/main/resources/zab_message.proto" />
                 </exec>
@@ -289,7 +289,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
-      <version>4.0.21.Final</version>
+      <version>4.2.9.Final</version>
     </dependency>
   </dependencies>
 </project>
