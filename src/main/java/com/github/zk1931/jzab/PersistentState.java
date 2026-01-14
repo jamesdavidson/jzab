@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -53,7 +54,7 @@ class PersistentState {
   /**
    * The root directory for all the persistent variables.
    */
-  private final File rootDir;
+  private final Path rootDir;
 
   /**
    * The sub directory for log and snapshots.
@@ -75,26 +76,31 @@ class PersistentState {
   public PersistentState(File dir) throws IOException {
     this(dir, null);
   }
+  public PersistentState(Path dir) throws IOException {
+    this(dir, null);
+  }
 
   PersistentState(File dir, Log log) throws IOException {
-    this.rootDir = dir;
-    LOG.debug("Trying to create log directory {}", rootDir.getAbsolutePath());
-    if (!rootDir.mkdir()) {
-      LOG.debug("Creating log directory {} failed, already exists?",
-                rootDir.getAbsolutePath());
+    this.rootDir = dir.toPath();
+    LOG.debug("Trying to create log directory {}", dir.getAbsolutePath());
+    if (!dir.mkdir()) {
+      LOG.debug("Creating log directory {} failed, already exists?", dir.getAbsolutePath());
     }
     this.dataDir = getLatestDataDir();
     if (this.dataDir == null) {
       this.dataDir = getNextDataDir();
       this.dataDir.mkdir();
     }
-    this.fAckEpoch = new File(rootDir, "ack_epoch");
-    this.fProposedEpoch = new File(rootDir, "proposed_epoch");
+    this.fAckEpoch = rootDir.resolve("ack_epoch").toFile();
+    this.fProposedEpoch = rootDir.resolve("proposed_epoch").toFile();
     if (log == null) {
       this.log = createLog(this.dataDir);
     } else {
       this.log = log;
     }
+  }
+  PersistentState(Path dir, Log log) throws IOException {
+    this(dir.toFile(), log);
   }
 
   /**
@@ -192,7 +198,7 @@ class PersistentState {
    * @throws IOException in case of IO failure.
    */
   ClusterConfiguration getLastSeenConfig() throws IOException {
-    File file = getLatestFileWithPrefix(this.rootDir, "cluster_config");
+    File file = getLatestFileWithPrefix(this.rootDir.toFile(), "cluster_config");
     if (file == null) {
       return null;
     }
@@ -218,7 +224,7 @@ class PersistentState {
     String zxidFileName = "cluster_config." + zxid.toSimpleString();
     String lastFileName = null;
 
-    for (File file : this.rootDir.listFiles()) {
+    for (File file : this.rootDir.toFile().listFiles()) {
       if (!file.isDirectory() && file.getName().matches(pattern)) {
         String fileName = file.getName();
         if (lastFileName == null && fileName.compareTo(zxidFileName) <= 0) {
@@ -233,7 +239,7 @@ class PersistentState {
     if (lastFileName == null) {
       return null;
     }
-    File file = new File(this.rootDir, lastFileName);
+    File file = this.rootDir.resolve(lastFileName).toFile();
     try {
       Properties prop = FileUtils.readPropertiesFromFile(file);
       return ClusterConfiguration.fromProperties(prop);
@@ -252,7 +258,7 @@ class PersistentState {
    */
   void setLastSeenConfig(ClusterConfiguration conf) throws IOException {
     String version = conf.getVersion().toSimpleString();
-    File file = new File(rootDir, String.format("cluster_config.%s", version));
+    File file = this.rootDir.resolve(String.format("cluster_config.%s", version)).toFile();
     FileUtils.writePropertiesToFile(conf.toProperties(), file);
     // Since the new config file gets created, we need to fsync the directory.
     fsyncDirectory();
@@ -273,7 +279,8 @@ class PersistentState {
    * @return true if it's empty.
    */
   boolean isEmpty() {
-    return this.rootDir.listFiles().length == 1;
+    File[] files = this.rootDir.toFile().listFiles();
+    return files != null || files.length == 1;
   }
 
   /**
@@ -323,11 +330,11 @@ class PersistentState {
    * @param prefix the prefix of the file.
    */
   File createTempFile(String prefix) throws IOException {
-    return File.createTempFile(prefix, "", this.rootDir);
+    return Files.createTempFile(this.rootDir, prefix, "").toFile();
   }
 
   File getLogDir() {
-    return this.rootDir;
+    return this.rootDir.toFile();
   }
 
   /**
@@ -364,7 +371,7 @@ class PersistentState {
   // We need also fsync file directory when file gets created. This is related
   // to ZOOKEEPER-2003 https://issues.apache.org/jira/browse/ZOOKEEPER-2003
   void fsyncDirectory() throws IOException {
-    try (FileChannel channel = FileChannel.open(this.rootDir.toPath())) {
+    try (FileChannel channel = FileChannel.open(this.rootDir)) {
       channel.force(true);
     }
   }
@@ -377,7 +384,7 @@ class PersistentState {
   void beginStateTransfer() throws IOException {
     this.isTransferring = true;
     this.dataDir =
-      Files.createTempDirectory(this.rootDir.toPath(), "tmp_data").toFile();
+      Files.createTempDirectory(this.rootDir, "tmp_data").toFile();
     this.log = createLog(this.dataDir);
   }
 
@@ -422,15 +429,18 @@ class PersistentState {
   File getLatestDataDir() {
     List<String> files = new ArrayList<String>();
     String pattern = "data\\d+";
-    for (File file : this.rootDir.listFiles()) {
-      if (file.getName().matches(pattern) && file.isDirectory()) {
-        files.add(file.getName());
+    File[] listFiles = this.rootDir.toFile().listFiles();
+    if (listFiles != null) {
+      for (File file : listFiles) {
+        if (file.getName().matches(pattern) && file.isDirectory()) {
+          files.add(file.getName());
+        }
       }
     }
     if (!files.isEmpty()) {
       // Picks the last one.
       Collections.sort(files);
-      return new File(this.rootDir, files.get(files.size() - 1));
+      return this.rootDir.resolve(files.get(files.size() - 1)).toFile();
     }
     return null;
   }
@@ -447,7 +457,7 @@ class PersistentState {
       newID = Long.parseLong(latest.getName().substring(4)) + 1;
     }
     String suffix = String.format("%015d", newID);
-    return new File(this.rootDir, "data" + suffix);
+    return this.rootDir.resolve("data" + suffix).toFile();
   }
 
 
@@ -458,7 +468,7 @@ class PersistentState {
    // cluster_config files.
   void cleanupClusterConfigFiles() throws IOException {
     Zxid latestZxid = getLatestZxid();
-    List<File> files = getFilesWithPrefix(this.rootDir, "cluster_config");
+    List<File> files = getFilesWithPrefix(this.rootDir.toFile(), "cluster_config");
     if (files.isEmpty()) {
       LOG.error("There's no cluster_config files in log directory.");
       throw new RuntimeException("There's no cluster_config files!");
