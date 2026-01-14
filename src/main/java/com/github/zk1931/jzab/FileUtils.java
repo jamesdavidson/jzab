@@ -17,16 +17,10 @@
  */
 package com.github.zk1931.jzab;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +67,32 @@ final class FileUtils {
   }
 
   /**
+   * Atomically writes a long integer to a file.
+   *
+   * This method writes a long integer to a file by first writing the long
+   * integer to a temporary file and then atomically moving it to the
+   * destination, overwriting the destination file if it already exists.
+   *
+   * @param value a long integer value to write.
+   * @param file file to write the value to.
+   * @throws IOException if an I/O error occurs.
+   */
+  public static void writeLongToFile(long value, Path file) throws IOException {
+    // Create a temp file in the same directory as the file parameter.
+    Path temp = Files.createTempFile(file.getParent(),
+            file.getFileName().toString(), null);
+    try (FileOutputStream fos = new FileOutputStream(temp.toFile());
+         OutputStreamWriter os =
+                 new OutputStreamWriter(fos, Charset.forName("UTF-8"));
+         PrintWriter pw = new PrintWriter(os)) {
+      pw.print(Long.toString(value));
+      fos.getChannel().force(true);
+    }
+    atomicMove(temp, file);
+    LOG.debug("Atomically moved {} to {}", temp, file);
+  }
+
+  /**
    * Reads a long integer from a file that was created by the
    * {@link #writeLongToFile(long, File) writeIntToFile} method.
    *
@@ -84,6 +104,21 @@ final class FileUtils {
     try (FileInputStream fis = new FileInputStream(file);
          BufferedReader br = new BufferedReader(
            new InputStreamReader(fis, Charset.forName("UTF-8")))) {
+      long value = Long.parseLong(br.readLine());
+      return value;
+    }
+  }
+
+  /**
+   * Reads a long integer from a file that was created by the
+   * {@link #writeLongToFile(long, File) writeIntToFile} method.
+   *
+   * @param file file to read the integer value from.
+   * @return the long integer value in the file
+   * @throws IOException if an I/O error occurs.
+   */
+  public static long readLongFromFile(Path file) throws IOException {
+    try (BufferedReader br = Files.newBufferedReader(file, Charset.forName("UTF-8"))) {
       long value = Long.parseLong(br.readLine());
       return value;
     }
@@ -114,6 +149,30 @@ final class FileUtils {
   }
 
   /**
+   * Atomically writes properties to a file.
+   *
+   * This method writes properties to a file by first writing it to a
+   * temporary file and then atomically moving it to the destination,
+   * overwriting the destination file if it already exists.
+   *
+   * @param prop a Properties object to write.
+   * @param filePath file to write the value to.
+   * @throws IOException if an I/O error occurs.
+   */
+  public static void writePropertiesToFile(Properties prop, Path filePath)
+          throws IOException {
+    // Create a temp file in the same directory as the file parameter.
+    Path temp = Files.createTempFile(filePath.getParent(),
+            filePath.getFileName().toString(), null);
+    try (OutputStream os = Files.newOutputStream(temp)) {
+      prop.store(os, "");
+      ((FileOutputStream) os).getChannel().force(true);
+    }
+    atomicMove(temp, filePath);
+    LOG.debug("Atomically moved {} to {}", temp, filePath);
+  }
+
+  /**
    * Reads the Properties from a file that was created by the
    * {@link #writePropertiesToFile(Properties, File) writePropertiesToFile}
    * method.
@@ -132,6 +191,24 @@ final class FileUtils {
   }
 
   /**
+   * Reads the Properties from a file that was created by the
+   * {@link #writePropertiesToFile(Properties, File) writePropertiesToFile}
+   * method.
+   *
+   * @param file file to read the Properties object from.
+   * @return the Properties object in the file
+   * @throws IOException if an I/O error occurs.
+   */
+  public static Properties readPropertiesFromFile(Path file)
+          throws IOException {
+    try (InputStream fis = Files.newInputStream(file)) {
+      Properties prop = new Properties();
+      prop.load(fis);
+      return prop;
+    }
+  }
+
+  /**
    * Atomically move one file to another file.
    *
    * @param source the source file.
@@ -140,5 +217,16 @@ final class FileUtils {
    */
   public static void atomicMove(File source, File dest) throws IOException {
     Files.move(source.toPath(), dest.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
+  }
+
+  /**
+   * Atomically move one file to another file.
+   *
+   * @param source the source file.
+   * @param dest the destination file.
+   * @throws IOException if an I/O error occurs.
+   */
+  public static void atomicMove(Path source, Path dest) throws IOException {
+    Files.move(source, dest, ATOMIC_MOVE, REPLACE_EXISTING);
   }
 }
