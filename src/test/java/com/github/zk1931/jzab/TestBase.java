@@ -18,7 +18,6 @@
 
 package com.github.zk1931.jzab;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
