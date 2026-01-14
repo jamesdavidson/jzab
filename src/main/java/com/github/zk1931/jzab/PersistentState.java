@@ -273,7 +273,8 @@ class PersistentState {
    * @return true if it's empty.
    */
   boolean isEmpty() {
-    return this.rootDir.listFiles().length == 1;
+    File[] listFiles = this.rootDir.listFiles();
+    return listFiles != null && listFiles.length == 1;
   }
 
   /**
@@ -422,9 +423,12 @@ class PersistentState {
   File getLatestDataDir() {
     List<String> files = new ArrayList<String>();
     String pattern = "data\\d+";
-    for (File file : this.rootDir.listFiles()) {
-      if (file.getName().matches(pattern) && file.isDirectory()) {
-        files.add(file.getName());
+    File[] listFiles = this.rootDir.listFiles();
+    if (listFiles != null) {
+      for (File file : listFiles) {
+        if (file.getName().matches(pattern) && file.isDirectory()) {
+          files.add(file.getName());
+        }
       }
     }
     if (!files.isEmpty()) {

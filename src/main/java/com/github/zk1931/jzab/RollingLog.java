@@ -237,11 +237,14 @@ class RollingLog implements Log {
 
   // Initialize from the log directory.
   void initFromDir() {
-    for (File file : this.logDir.listFiles()) {
-      if (!file.isDirectory() &&
-          file.getName().matches("transaction\\.\\d+_\\d+")) {
-        // Appends the file with valid name to log file list.
-        this.logFiles.add(file);
+    File[] listFiles = this.logDir.listFiles();
+    if (listFiles != null) {
+      for (File file : this.logDir.listFiles()) {
+        if (!file.isDirectory() &&
+                file.getName().matches("transaction\\.\\d+_\\d+")) {
+          // Appends the file with valid name to log file list.
+          this.logFiles.add(file);
+        }
       }
     }
     if (!this.logFiles.isEmpty()) {
