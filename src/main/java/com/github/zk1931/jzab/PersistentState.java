@@ -365,8 +365,13 @@ class PersistentState {
   // We need also fsync file directory when file gets created. This is related
   // to ZOOKEEPER-2003 https://issues.apache.org/jira/browse/ZOOKEEPER-2003
   void fsyncDirectory() throws IOException {
-    try (FileChannel channel = FileChannel.open(this.rootDir.toPath())) {
-      channel.force(true);
+//    try (FileChannel channel = FileChannel.open(this.rootDir.toPath())) {
+//      channel.force(true);
+//    }
+    try {
+      Thread.sleep(50);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 
