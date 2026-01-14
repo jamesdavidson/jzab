@@ -31,6 +31,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.zip.Adler32;
 import org.slf4j.Logger;
@@ -61,7 +62,7 @@ import org.slf4j.LoggerFactory;
  */
 class SimpleLog implements Log {
   private static final Logger LOG = LoggerFactory.getLogger(SimpleLog.class);
-  private final File logFile;
+  private final Path logFile;
   private final DataOutputStream logStream;
   private final FileOutputStream fout;
   private Zxid lastSeenZxid = null;
@@ -88,13 +89,16 @@ class SimpleLog implements Log {
    * @throws IOException in case of IO failure
    */
   public SimpleLog(File logFile) throws IOException {
-    this.logFile = logFile;
+    this.logFile = logFile.toPath();
     this.fout = new FileOutputStream(logFile, true);
     this.logStream = new DataOutputStream(
                       new BufferedOutputStream(fout));
     this.lastSeenZxid = getLatestZxid();
     LOG.debug("SimpleLog constructed. The lastSeenZxid is {}.",
               this.lastSeenZxid);
+  }
+  public SimpleLog(Path logFile) throws IOException {
+    this(logFile.toFile());
   }
 
   /**
@@ -165,7 +169,7 @@ class SimpleLog implements Log {
    */
   @Override
   public void truncate(Zxid zxid) throws IOException {
-    try (SimpleLogIterator iter = new SimpleLogIterator(this.logFile)) {
+    try (SimpleLogIterator iter = new SimpleLogIterator(this.logFile.toFile())) {
       this.lastSeenZxid = Zxid.ZXID_NOT_EXIST;
       while (iter.hasNext()) {
         Transaction txn = iter.next();
@@ -181,7 +185,7 @@ class SimpleLog implements Log {
       }
       if (iter.hasNext()) {
         // It means there's something to truncate.
-        try (RandomAccessFile ra = new RandomAccessFile(this.logFile, "rw")) {
+        try (RandomAccessFile ra = new RandomAccessFile(this.logFile.toFile(), "rw")) {
           // Truncate the file from given position.
           ra.setLength(iter.getPosition());
         }
@@ -203,7 +207,7 @@ class SimpleLog implements Log {
       return this.lastSeenZxid;
     }
     Transaction txn = null;
-    try (LogIterator iter = new SimpleLogIterator(this.logFile)) {
+    try (LogIterator iter = new SimpleLogIterator(this.logFile.toFile())) {
       while (iter.hasNext()) {
         txn = iter.next();
       }
@@ -224,7 +228,7 @@ class SimpleLog implements Log {
    */
   @Override
   public LogIterator getIterator(Zxid zxid) throws IOException {
-    SimpleLogIterator iter = new SimpleLogIterator(this.logFile);
+    SimpleLogIterator iter = new SimpleLogIterator(this.logFile.toFile());
     while(iter.hasNext()) {
       Transaction txn = iter.next();
       if(txn.getZxid().compareTo(zxid) >= 0) {
@@ -285,11 +289,11 @@ class SimpleLog implements Log {
   }
 
   long length() {
-    return this.logFile.length();
+    return this.logFile.toFile().length();
   }
 
   String getName() {
-    return this.logFile.getName();
+    return this.logFile.toFile().getName();
   }
 
   /**

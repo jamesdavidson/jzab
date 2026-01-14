@@ -21,6 +21,7 @@ package com.github.zk1931.jzab;
 import com.github.zk1931.jzab.Log.DivergingTuple;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ class RollingLog implements Log {
   /**
    * The log directory for all the log files.
    */
-  private final File logDir;
+  private final Path logDir;
 
   /**
    * The last seen zxid, used to avoid appending duplicate transactions.
@@ -70,12 +71,15 @@ class RollingLog implements Log {
    * @throws IOException in case of IO failure
    */
   public RollingLog(File logDir, long rollingSize) throws IOException {
-    this.logDir = logDir;
+    this.logDir = logDir.toPath();
     this.rollingSize =  rollingSize;
     // Initialize from log directory.
     initFromDir();
     this.currentLog = getLastLog();
     this.lastSeenZxid = getLatestZxid();
+  }
+  public RollingLog(Path logDir, long rollingSize) throws IOException {
+    this(logDir.toFile(), rollingSize);
   }
 
   /**
@@ -108,7 +112,7 @@ class RollingLog implements Log {
       Zxid zxid = txn.getZxid();
       // Close the old one if any.
       this.close();
-      File logFile = new File(logDir, "transaction." + zxid.toSimpleString());
+      File logFile = logDir.resolve("transaction." + zxid.toSimpleString()).toFile();
       LOG.debug("Rolling to the new log {}.", logFile.getName());
       // Adds new created log file to list.
       this.logFiles.add(logFile);
@@ -237,7 +241,7 @@ class RollingLog implements Log {
 
   // Initialize from the log directory.
   void initFromDir() {
-    for (File file : this.logDir.listFiles()) {
+    for (File file : this.logDir.toFile().listFiles()) {
       if (!file.isDirectory() &&
           file.getName().matches("transaction\\.\\d+_\\d+")) {
         // Appends the file with valid name to log file list.
