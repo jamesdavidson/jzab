@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -74,6 +75,10 @@ class PersistentState {
 
   public PersistentState(File dir) throws IOException {
     this(dir, null);
+  }
+
+  public PersistentState(Path dir) throws IOException {
+    this(dir.toFile(), null);
   }
 
   PersistentState(File dir, Log log) throws IOException {
