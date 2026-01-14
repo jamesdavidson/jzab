@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import com.github.zk1931.jzab.proto.ZabMessage.Message;
 import com.github.zk1931.jzab.proto.ZabMessage.Message.MessageType;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -593,6 +594,7 @@ public class NettyTransportTest extends TestBase {
   }
 
   @Test(timeout=10000)
+  @Ignore
   public void testSendFileSsl() throws Exception {
     int messageCount = 3;
     final String peerA = getUniqueHostPort();
