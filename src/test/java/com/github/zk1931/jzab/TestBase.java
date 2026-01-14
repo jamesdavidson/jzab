@@ -169,7 +169,7 @@ public class TestBase {
   PersistentState makeInitialState(String serverId, int numTxnsInLog)
       throws IOException {
     PersistentState state =
-      new PersistentState(getDirectory().resolve(serverId).toFile());
+      new PersistentState(getDirectory().resolve(serverId.replace(':','_')).toFile());
 
     Log log = state.getLog();
     for (int i = 0; i < numTxnsInLog; ++i) {
