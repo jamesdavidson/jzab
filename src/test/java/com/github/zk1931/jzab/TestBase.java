@@ -108,7 +108,9 @@ public class TestBase {
   protected File getDirectory() {
     String dirName = "target" + File.separator + "data" + File.separator +
                      this.getClass().getCanonicalName() + File.separator +
-                     testName.getMethodName();
+                     testName.getMethodName()
+                             .replace('[','_')
+                             .replace(']','_');
     File dir = new File(dirName);
     LOG.debug("Creating a data directory: {}", dirName);
     dir.mkdirs();
