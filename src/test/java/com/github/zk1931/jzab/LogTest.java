@@ -62,7 +62,7 @@ public class LogTest extends TestBase {
   }
 
   Log getLog() throws Exception {
-    File f = new File(getDirectory(), this.fileName);
+    File f = getDirectory().resolve(this.fileName).toFile();
     if (logClass == (Class<?>)RollingLog.class) {
       // For testing purpose, set the rolling size to be very small.
       return logClass.getConstructor(File.class, Long.TYPE)
@@ -73,7 +73,7 @@ public class LogTest extends TestBase {
   }
 
   void corruptFile(int position) throws Exception {
-    File file = new File(getDirectory(), "transaction.log");
+    File file = getDirectory().resolve("transaction.log").toFile();
     RandomAccessFile ra = new RandomAccessFile(file, "rw");
     ra.seek(position);
     ra.write(0xff);

@@ -21,8 +21,11 @@ package com.github.zk1931.jzab;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -78,7 +81,7 @@ public class TestBase {
   @Before
   public void createDirectory() {
     Stack<File> stack = new Stack<>();
-    File directory = getDirectory();
+    File directory = getDirectory().toFile();
     if (directory.exists()) {
       stack.push(directory);
     }
@@ -105,13 +108,15 @@ public class TestBase {
    *
    * @return the name of the directory
    */
-  protected File getDirectory() {
+  protected Path getDirectory() {
     String dirName = "target" + File.separator + "data" + File.separator +
                      this.getClass().getCanonicalName() + File.separator +
-                     testName.getMethodName();
-    File dir = new File(dirName);
+                     testName.getMethodName()
+                             .replace('[', '_')
+                             .replace(']', '_');
+    Path dir = Paths.get(URI.create("file:" + System.getProperty("user.dir") + File.separator + dirName));
     LOG.debug("Creating a data directory: {}", dirName);
-    dir.mkdirs();
+    dir.toFile().mkdirs();
     return dir;
   }
 
@@ -144,7 +149,7 @@ public class TestBase {
   PersistentState makeInitialState(String serverId, int numTxnsInLog)
       throws IOException {
     PersistentState state =
-      new PersistentState(new File(getDirectory(), serverId));
+      new PersistentState(getDirectory().resolve(serverId));
     Log log = state.getLog();
     for (int i = 0; i < numTxnsInLog; ++i) {
       String body = "Txn " + i;

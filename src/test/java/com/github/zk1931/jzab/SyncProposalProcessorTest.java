@@ -67,7 +67,7 @@ public class SyncProposalProcessorTest extends TestBase {
   }
 
   Log getLog(String subdir) throws Exception {
-    File fSub = new File(getDirectory(), subdir);
+    File fSub = getDirectory().resolve(subdir).toFile();
     fSub.mkdir();
     File f = new File(fSub, this.fileName);
     if (logClass == (Class<?>)RollingLog.class) {

@@ -524,11 +524,11 @@ public class NettyTransportTest extends TestBase {
       new ZabConfig.SslParameters(keyStoreC, password, trustStore, password);
 
     NettyTransport transportA =
-      new NettyTransport(peerA, receiverA, sslParam1, getDirectory());
+      new NettyTransport(peerA, receiverA, sslParam1, getDirectory().toFile());
     NettyTransport transportB =
-      new NettyTransport(peerB, receiverB, sslParam2, getDirectory());
+      new NettyTransport(peerB, receiverB, sslParam2, getDirectory().toFile());
     NettyTransport transportC =
-      new NettyTransport(peerC, receiverC, sslParam3, getDirectory());
+      new NettyTransport(peerC, receiverC, sslParam3, getDirectory().toFile());
     NettyTransport transportD =
       new NettyTransport(peerD, receiverD, getDirectory());
 
@@ -638,9 +638,9 @@ public class NettyTransportTest extends TestBase {
       new ZabConfig.SslParameters(keyStoreB, password, trustStore, password);
 
     NettyTransport transportA = new NettyTransport(peerA, receiverA, sslParam1,
-                                    getDirectory());
+                                    getDirectory().toFile());
     NettyTransport transportB = new NettyTransport(peerB, receiverB, sslParam2,
-                                    getDirectory());
+                                    getDirectory().toFile());
     transportA.send(peerB, createAck(new Zxid(0, 0)));
     File file = new File("./pom.xml");
     transportA.send(peerB, file.toPath());
