@@ -187,8 +187,8 @@ public class SnapshotTest extends TestBase {
 
     ZabConfig config1 = new ZabConfig();
     ZabConfig config2 = new ZabConfig();
-    config1.setLogDir(getDirectory().getPath() + File.separator + server1);
-    config2.setLogDir(getDirectory().getPath() + File.separator + server2);
+    config1.setLogDir(getDirectory().getPath() + File.separator + server1.replace(':','_'));
+    config2.setLogDir(getDirectory().getPath() + File.separator + server2.replace(':','_'));
 
     Zab zab1 = new Zab(st1, config1, server1, server1);
     st1.waitMemberChanged();
@@ -242,9 +242,9 @@ public class SnapshotTest extends TestBase {
     String server2 = getUniqueHostPort();
 
     ZabConfig config1 = new ZabConfig();
-    config1.setLogDir(getDirectory().getPath() + File.separator + server1);
+    config1.setLogDir(getDirectory().getPath() + File.separator + server1.replace(':','_'));
     ZabConfig config2 = new ZabConfig();
-    config2.setLogDir(getDirectory().getPath() + File.separator + server2);
+    config2.setLogDir(getDirectory().getPath() + File.separator + server2.replace(':','_'));
 
     Zab zab1 = new Zab(st1, config1, server1, server1);
     st1.waitMemberChanged();

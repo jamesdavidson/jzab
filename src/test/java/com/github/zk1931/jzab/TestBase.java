@@ -144,7 +144,7 @@ public class TestBase {
   PersistentState makeInitialState(String serverId, int numTxnsInLog)
       throws IOException {
     PersistentState state =
-      new PersistentState(new File(getDirectory(), serverId));
+      new PersistentState(new File(getDirectory(), serverId.replace(':','_')));
     Log log = state.getLog();
     for (int i = 0; i < numTxnsInLog; ++i) {
       String body = "Txn " + i;
