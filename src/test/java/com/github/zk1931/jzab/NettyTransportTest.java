@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -511,10 +513,10 @@ public class NettyTransportTest extends TestBase {
     String sslDir = "target" + File.separator + "generated-resources" +
                     File.separator + "ssl";
 
-    File trustStore = new File(sslDir, "truststore.jks");
-    File keyStoreA = new File(sslDir, "keystore_a.jks");
-    File keyStoreB = new File(sslDir, "keystore_b.jks");
-    File keyStoreC = new File(sslDir, "keystore_c.jks");
+    Path trustStore = Paths.get(sslDir, "truststore.jks");
+    Path keyStoreA = Paths.get(sslDir, "keystore_a.jks");
+    Path keyStoreB = Paths.get(sslDir, "keystore_b.jks");
+    Path keyStoreC = Paths.get(sslDir, "keystore_c.jks");
 
     ZabConfig.SslParameters sslParam1 =
       new ZabConfig.SslParameters(keyStoreA, password, trustStore, password);
@@ -584,12 +586,12 @@ public class NettyTransportTest extends TestBase {
       new NettyTransport(peerB, receiverB, getDirectory());
 
     transportA.send(peerB, createAck(new Zxid(0, 0)));
-    File file = new File("./pom.xml");
-    transportA.send(peerB, file.toPath());
+    Path file = Paths.get("./pom.xml");
+    transportA.send(peerB, file);
     transportA.send(peerB, createAck(new Zxid(0, 1)));
     latchB.await();
 
-    Assert.assertTrue(compareFiles(file, receivedFiles.get(0)));
+    Assert.assertTrue(compareFiles(file, receivedFiles.get(0).toPath()));
     transportA.shutdown();
     transportB.shutdown();
   }
@@ -674,5 +676,8 @@ public class NettyTransportTest extends TestBase {
       }
       return sb1.toString().equals(sb2.toString());
     }
+  }
+  static boolean compareFiles(Path file1, Path file2) throws Exception {
+    return compareFiles(file1.toFile(), file2.toFile());
   }
 }

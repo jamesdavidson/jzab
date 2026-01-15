@@ -18,10 +18,9 @@
 
 package com.github.zk1931.jzab;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -62,22 +61,28 @@ public class LogTest extends TestBase {
   }
 
   Log getLog() throws Exception {
-    File f = getDirectory().resolve(this.fileName).toFile();
+    Path f = getDirectory().resolve(this.fileName);
     if (logClass == (Class<?>)RollingLog.class) {
       // For testing purpose, set the rolling size to be very small.
-      return logClass.getConstructor(File.class, Long.TYPE)
+      return logClass.getConstructor(Path.class, Long.TYPE)
                           .newInstance(f, 128);
     } else {
-      return logClass.getConstructor(File.class).newInstance(f);
+      return logClass.getConstructor(Path.class).newInstance(f);
     }
   }
 
   void corruptFile(int position) throws Exception {
-    File file = getDirectory().resolve("transaction.log").toFile();
-    RandomAccessFile ra = new RandomAccessFile(file, "rw");
-    ra.seek(position);
-    ra.write(0xff);
-    ra.close();
+    Path file = getDirectory().resolve("transaction.log");
+    try (java.nio.channels.FileChannel fc = java.nio.channels.FileChannel.open(
+            file,
+            java.nio.file.StandardOpenOption.READ,
+            java.nio.file.StandardOpenOption.WRITE)) {
+      java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(1);
+      buffer.put((byte) 0xff);
+      buffer.flip();
+      fc.position(position);
+      fc.write(buffer);
+    }
   }
 
   /**

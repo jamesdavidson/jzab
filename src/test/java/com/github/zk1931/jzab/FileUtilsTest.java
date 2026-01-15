@@ -18,9 +18,10 @@
 
 package com.github.zk1931.jzab;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,7 +31,7 @@ import org.junit.Test;
 public class FileUtilsTest extends TestBase {
   @Test
   public void testReadWriteLong() throws IOException {
-    File file = getDirectory().resolve("test").toFile();
+    Path file = getDirectory().resolve("test");
     for (int i = 0; i < 10; i++) {
       FileUtils.writeLongToFile(i, file);
       Assert.assertEquals(i, FileUtils.readLongFromFile(file));
@@ -39,6 +40,6 @@ public class FileUtilsTest extends TestBase {
 
   @Test(expected=FileNotFoundException.class)
   public void testFileNotFound() throws IOException {
-    FileUtils.readLongFromFile(getDirectory().resolve("missing").toFile());
+    FileUtils.readLongFromFile(getDirectory().resolve("missing"));
   }
 }

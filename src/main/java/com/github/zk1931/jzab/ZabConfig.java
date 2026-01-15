@@ -19,6 +19,7 @@
 package com.github.zk1931.jzab;
 
 import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Configuration parameters for {@link Zab}.
@@ -152,6 +153,14 @@ public class ZabConfig {
       this.keyStore = keyStore;
       this.keyStorePassword = keyStorePassword;
       this.trustStore = trustStore;
+      this.trustStorePassword = trustStorePassword;
+    }
+
+    public SslParameters(Path keyStore, String keyStorePassword,
+                         Path trustStore, String trustStorePassword) {
+      this.keyStore = keyStore.toFile();
+      this.keyStorePassword = keyStorePassword;
+      this.trustStore = trustStore.toFile();
       this.trustStorePassword = trustStorePassword;
     }
 
