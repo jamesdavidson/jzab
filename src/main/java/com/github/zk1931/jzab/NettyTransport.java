@@ -41,7 +41,10 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.AttributeKey;
@@ -92,8 +95,8 @@ class NettyTransport extends Transport {
   private final char[] keyStorePassword;
   private final File trustStore;
   private final char[] trustStorePassword;
-  private SSLContext clientContext;
-  private SSLContext serverContext;
+  private SslContext clientContext;
+  private SslContext serverContext;
   private final File dir;
 
   // remote id => sender map.
@@ -149,10 +152,7 @@ class NettyTransport extends Transport {
         @Override
         public void initChannel(SocketChannel ch) throws Exception {
           if (isSslEnabled()) {
-            SSLEngine engine = serverContext.createSSLEngine();
-            engine.setUseClientMode(false);
-            engine.setNeedClientAuth(true);
-            ch.pipeline().addLast(new SslHandler(engine));
+            ch.pipeline().addLast(serverContext.newHandler(ch.alloc()));
           }
           // Incoming handlers
           ch.pipeline().addLast(new MainHandler());
@@ -188,8 +188,7 @@ class NettyTransport extends Transport {
   private void initSsl() throws IOException, GeneralSecurityException {
     String kmAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
     String tmAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
-    // TODO make the protocol and keystore type configurable.
-    String protocol = "TLS";
+
     KeyStore ks = KeyStore.getInstance("JKS");
     KeyStore ts = KeyStore.getInstance("JKS");
     try (FileInputStream keyStoreStream = new FileInputStream(keyStore);
@@ -201,10 +200,17 @@ class NettyTransport extends Transport {
     TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmAlgorithm);
     kmf.init(ks, keyStorePassword);
     tmf.init(ts);
-    serverContext = SSLContext.getInstance(protocol);
-    clientContext = SSLContext.getInstance(protocol);
-    serverContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-    clientContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+    serverContext = SslContextBuilder.forServer(kmf)
+        // .endpointIdentificationAlgorithm(null)
+        .trustManager(tmf)
+        .build();
+
+    clientContext = SslContextBuilder.forClient()
+        // .endpointIdentificationAlgorithm(null)
+        .keyManager(kmf)
+        .trustManager(tmf)
+        .build();
   }
 
   /**
@@ -513,9 +519,7 @@ class NettyTransport extends Transport {
         @Override
         public void initChannel(SocketChannel ch) throws Exception {
           if (isSslEnabled()) {
-            SSLEngine engine = serverContext.createSSLEngine();
-            engine.setUseClientMode(true);
-            ch.pipeline().addLast(new SslHandler(engine));
+            ch.pipeline().addLast(clientContext.newHandler(ch.alloc()));
           }
           // Inbound handlers.
           ch.pipeline().addLast("clientError", new ClientErrorHandler());
