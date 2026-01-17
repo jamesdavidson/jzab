@@ -41,10 +41,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.ssl.SslProvider;
+import io.netty.handler.ssl.*;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.AttributeKey;
@@ -203,11 +200,14 @@ class NettyTransport extends Transport {
 
     serverContext = SslContextBuilder.forServer(kmf)
         // .endpointIdentificationAlgorithm(null)
+        // .sslProvider(SslProvider.OPENSSL)
         .trustManager(tmf)
+        .clientAuth(ClientAuth.REQUIRE) // Replaces engine.setNeedClientAuth(true)
         .build();
 
     clientContext = SslContextBuilder.forClient()
         // .endpointIdentificationAlgorithm(null)
+        // .sslProvider(SslProvider.OPENSSL)
         .keyManager(kmf)
         .trustManager(tmf)
         .build();
