@@ -202,9 +202,9 @@
             <configuration>
               <tasks>
                 <mkdir dir="target/generated-resources/ssl" />
-<!--                <exec executable="src/test/resources/generate-test-certificates">-->
-<!--                  <arg value="target/generated-resources/ssl" />-->
-<!--                </exec>-->
+                <exec executable="src/test/resources/generate-test-certificates">
+                  <arg value="target/generated-resources/ssl" />
+                </exec>
               </tasks>
             </configuration>
             <goals>

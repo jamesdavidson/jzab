@@ -6,9 +6,9 @@
 OUTDIR=$1
 PASS=pa55w0rd
 DNAME='CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown'
-keytool -keystore $OUTDIR/keystore_a.jks -genkey -alias javazab -keypass $PASS -storepass $PASS -dname "$DNAME"
-keytool -keystore $OUTDIR/keystore_b.jks -genkey -alias javazab -keypass $PASS -storepass $PASS -dname "$DNAME"
-keytool -keystore $OUTDIR/keystore_c.jks -genkey -alias javazab -keypass $PASS -storepass $PASS -dname "$DNAME"
+keytool -keystore $OUTDIR/keystore_a.jks -genkey -keyalg RSA -alias javazab -keypass $PASS -storepass $PASS -dname "$DNAME"
+keytool -keystore $OUTDIR/keystore_b.jks -genkey -keyalg RSA -alias javazab -keypass $PASS -storepass $PASS -dname "$DNAME"
+keytool -keystore $OUTDIR/keystore_c.jks -genkey -keyalg RSA -alias javazab -keypass $PASS -storepass $PASS -dname "$DNAME"
 
 keytool -exportcert -rfc -alias javazab -storepass $PASS -keystore $OUTDIR/keystore_a.jks -file $OUTDIR/cert_a.pem
 keytool -exportcert -rfc -alias javazab -storepass $PASS -keystore $OUTDIR/keystore_b.jks -file $OUTDIR/cert_b.pem
