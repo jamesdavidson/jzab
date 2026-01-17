@@ -184,7 +184,7 @@
             <configuration>
               <tasks>
                 <mkdir dir="target/generated-sources" />
-                <exec executable="protoc-2.6.1-windows-x86_64.exe">
+                <exec executable="./protoc-33.4">
                   <arg value="--java_out=target/generated-sources" />
                   <arg value="src/main/resources/zab_message.proto" />
                 </exec>
@@ -284,7 +284,7 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <version>2.6.1</version>
+      <version>4.33.4</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
