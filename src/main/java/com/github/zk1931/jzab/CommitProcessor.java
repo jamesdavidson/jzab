@@ -214,7 +214,7 @@ class CommitProcessor implements RequestProcessor, Callable<Void> {
           stateMachine.snapshotDone(msg.getSnapshotDone().getFilePath(), ctx);
         } else {
           if (LOG.isWarnEnabled()) {
-            LOG.warn("Unexpected message {}", TextFormat.shortDebugString(msg));
+            LOG.warn("Unexpected message {}", TextFormat.printer().emittingSingleLine(true).printToString(msg));
           }
         }
       }

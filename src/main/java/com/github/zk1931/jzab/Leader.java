@@ -655,7 +655,7 @@ class Leader extends Participant {
     } else {
       if (LOG.isWarnEnabled()) {
         LOG.warn("Got unexpected message {} from {}.",
-                  TextFormat.shortDebugString(msg),
+                  TextFormat.printer().emittingSingleLine(true).printToString(msg),
                   source);
       }
     }
@@ -667,7 +667,7 @@ class Leader extends Participant {
     String source = tuple.getServerId();
     if (msg.getType() != MessageType.HEARTBEAT && LOG.isDebugEnabled()) {
       LOG.debug("Got message {} from {}",
-                TextFormat.shortDebugString(msg), source);
+                TextFormat.printer().emittingSingleLine(true).printToString(msg), source);
     }
     if (msg.getType() == MessageType.ACK) {
       onAck(tuple);
@@ -715,7 +715,7 @@ class Leader extends Participant {
     } else {
       if (LOG.isWarnEnabled()) {
         LOG.warn("Unexpected messgae : {} from {}",
-                 TextFormat.shortDebugString(msg),
+                 TextFormat.printer().emittingSingleLine(true).printToString(msg),
                  source);
       }
     }
@@ -764,7 +764,7 @@ class Leader extends Participant {
       // message to them.
       if (LOG.isDebugEnabled()) {
         LOG.debug("Got message {} and there're pending peers.",
-                  TextFormat.shortDebugString(msg));
+                  TextFormat.printer().emittingSingleLine(true).printToString(msg));
       }
       Zxid zxidCommit = this.lastCommittedZxid;
       Iterator<Map.Entry<String, PeerHandler>> iter =
@@ -817,7 +817,7 @@ class Leader extends Participant {
       // This is the ACK sent from the peer at the end of the synchronization.
       if (LOG.isDebugEnabled()) {
         LOG.debug("Got first {} from pending peer {}.",
-                  TextFormat.shortDebugString(msg),
+                  TextFormat.printer().emittingSingleLine(true).printToString(msg),
                   source);
       }
       peer.setLastAckedZxid(ackZxid);

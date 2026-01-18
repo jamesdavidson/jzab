@@ -360,7 +360,7 @@ class PeerHandler {
           // Got PROPOSAL message, send it to follower.
           if (LOG.isDebugEnabled()) {
             LOG.debug("Received PROPOSAL {}",
-                      TextFormat.shortDebugString(msg));
+                      TextFormat.printer().emittingSingleLine(true).printToString(msg));
           }
           // Sends this PROPOSAL if it's not the duplicate.
           sendMessage(msg);
@@ -368,14 +368,14 @@ class PeerHandler {
           // Got COMMIT message, send it to follower.
           if (LOG.isDebugEnabled()) {
             LOG.debug("Received COMMIT {}",
-                      TextFormat.shortDebugString(msg));
+                      TextFormat.printer().emittingSingleLine(true).printToString(msg));
           }
           // Sends this COMMIT if it's not the duplicate.
           sendMessage(msg);
         } else {
           // Got FLUSH message.
           if (LOG.isDebugEnabled()) {
-            LOG.debug("Received msg {}", TextFormat.shortDebugString(msg));
+            LOG.debug("Received msg {}", TextFormat.printer().emittingSingleLine(true).printToString(msg));
           }
           sendMessage(msg);
         }

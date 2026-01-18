@@ -242,7 +242,7 @@ class Follower extends Participant {
                                           persistence.getLastSeenConfig(),
                                           getSyncTimeoutMs());
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Sends {} to leader {}", TextFormat.shortDebugString(message),
+      LOG.debug("Sends {} to leader {}", TextFormat.printer().emittingSingleLine(true).printToString(message),
                 this.electedLeader);
     }
     sendMessage(this.electedLeader, message);
@@ -302,7 +302,7 @@ class Follower extends Participant {
     String source = tuple.getServerId();
     if (LOG.isDebugEnabled()) {
       LOG.debug("Got message {} from {}.",
-                TextFormat.shortDebugString(msg),
+                TextFormat.printer().emittingSingleLine(true).printToString(msg),
                 source);
     }
     ZabMessage.NewLeader nl = msg.getNewLeader();
@@ -412,7 +412,7 @@ class Follower extends Participant {
         }
         if (msg.getType() != MessageType.HEARTBEAT && LOG.isDebugEnabled()) {
           LOG.debug("Got message {} from {}",
-                    TextFormat.shortDebugString(msg), source);
+                    TextFormat.printer().emittingSingleLine(true).printToString(msg), source);
         }
         if (msg.getType() == MessageType.PROPOSAL) {
           Transaction txn = MessageBuilder.fromProposal(msg.getProposal());
@@ -436,7 +436,7 @@ class Follower extends Participant {
         } else {
           if (LOG.isWarnEnabled()) {
             LOG.warn("Unexpected messgae : {} from {}",
-                     TextFormat.shortDebugString(msg),
+                     TextFormat.printer().emittingSingleLine(true).printToString(msg),
                      source);
           }
         }

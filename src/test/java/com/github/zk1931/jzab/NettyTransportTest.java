@@ -336,7 +336,7 @@ public class NettyTransportTest extends TestBase {
         Assert.assertEquals(peerA, source);
         latchB.countDown();
         LOG.debug("Received a message from {}: {}: {}", source,
-                  TextFormat.shortDebugString(message), latchB.getCount());
+                  TextFormat.printer().emittingSingleLine(true).printToString(message), latchB.getCount());
       }
       public void onDisconnected(String source) {
         LOG.debug("Got disconnected from {}", source);
@@ -390,7 +390,7 @@ public class NettyTransportTest extends TestBase {
         Assert.assertEquals(peerA, source);
         latchB.countDown();
         LOG.debug("Received a message from {}: {}: {}", source,
-                  TextFormat.shortDebugString(message), latchB.getCount());
+                  TextFormat.printer().emittingSingleLine(true).printToString(message), latchB.getCount());
       }
       public void onDisconnected(String source) {
         LOG.debug("Got disconnected from {}", source);
@@ -570,7 +570,7 @@ public class NettyTransportTest extends TestBase {
           receivedFiles.add(new File(message.getFileReceived().getFullPath()));
         }
         LOG.debug("Received a message from {}: {}: {}", source,
-                  TextFormat.shortDebugString(message), latchB.getCount());
+                  TextFormat.printer().emittingSingleLine(true).printToString(message), latchB.getCount());
         latchB.countDown();
       }
       public void onDisconnected(String source) {
@@ -622,7 +622,7 @@ public class NettyTransportTest extends TestBase {
           receivedFiles.add(new File(message.getFileReceived().getFullPath()));
         }
         LOG.debug("Received a message from {}: {}: {}", source,
-                  TextFormat.shortDebugString(message), latchB.getCount());
+                  TextFormat.printer().emittingSingleLine(true).printToString(message), latchB.getCount());
         latchB.countDown();
       }
       public void onDisconnected(String source) {

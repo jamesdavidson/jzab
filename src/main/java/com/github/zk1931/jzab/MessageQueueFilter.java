@@ -102,7 +102,7 @@ class MessageQueueFilter {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Got an unexpected message from {}: {}",
                     tuple.getServerId(),
-                  TextFormat.printer().emittingSingleLine(true).printToString(tuple.getMessage()));
+                    TextFormat.printer().emittingSingleLine(true).printToString(tuple.getMessage()));
         }
       }
     }

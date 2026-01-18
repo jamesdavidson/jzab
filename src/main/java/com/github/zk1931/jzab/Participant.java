@@ -265,7 +265,7 @@ abstract class Participant {
   protected void sendMessage(String dest, Message message) {
     if (LOG.isTraceEnabled()) {
       LOG.trace("Sends message {} to {}.",
-                TextFormat.shortDebugString(message),
+                TextFormat.printer().emittingSingleLine(true).printToString(message),
                 dest);
     }
     this.transport.send(dest, message);
@@ -302,7 +302,7 @@ abstract class Participant {
           !source.equals(peer)) {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Got unexpected message {} from {}.",
-                    TextFormat.shortDebugString(msg), source);
+                    TextFormat.printer().emittingSingleLine(true).printToString(msg), source);
         }
         continue;
       } else {
@@ -340,7 +340,7 @@ abstract class Participant {
       // DIFF message.
       if (LOG.isDebugEnabled()) {
         LOG.debug("Got message {}",
-                  TextFormat.shortDebugString(msg));
+                  TextFormat.printer().emittingSingleLine(true).printToString(msg));
       }
       ZabMessage.Diff diff = msg.getDiff();
       // Remember last zxid of the peer.
@@ -354,7 +354,7 @@ abstract class Participant {
       // TRUNCATE message.
       if (LOG.isDebugEnabled()) {
         LOG.debug("Got message {}",
-                  TextFormat.shortDebugString(msg));
+                  TextFormat.printer().emittingSingleLine(true).printToString(msg));
       }
       ZabMessage.Truncate trunc = msg.getTruncate();
       Zxid lastPrefixZxid =
@@ -375,7 +375,7 @@ abstract class Participant {
       // SNAPSHOT message.
       if (LOG.isDebugEnabled()) {
         LOG.debug("Got message {}",
-                 TextFormat.shortDebugString(msg));
+                 TextFormat.printer().emittingSingleLine(true).printToString(msg));
       }
       ZabMessage.Snapshot snap = msg.getSnapshot();
       lastZxidPeer = MessageBuilder.fromProtoZxid(snap.getLastZxid());
@@ -407,7 +407,7 @@ abstract class Participant {
       msg = tuple.getMessage();
       source = tuple.getServerId();
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Got message {} from {}", TextFormat.shortDebugString(msg),
+        LOG.debug("Got message {} from {}", TextFormat.printer().emittingSingleLine(true).printToString(msg),
                   source);
       }
       ZabMessage.Proposal prop = msg.getProposal();

@@ -109,7 +109,7 @@ class SnapshotProcessor implements RequestProcessor, Callable<Void> {
         } else {
           if (LOG.isWarnEnabled()) {
             LOG.warn("Got unexpected message {}.",
-                     TextFormat.shortDebugString(msg));
+                     TextFormat.printer().emittingSingleLine(true).printToString(msg));
           }
         }
       }
