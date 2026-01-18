@@ -318,37 +318,30 @@
       <artifactId>protobuf-java</artifactId>
       <version>4.33.4</version>
     </dependency>
-<!--
+    <!-- Bouncy Castle Provider (core crypto) -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <version>1.83</version> <!-- Use the latest version -->
+    </dependency>
+    <!-- Bouncy Castle PKIX (for certificate handling) -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+      <version>1.83</version> <!-- Use the latest version -->
+    </dependency>
+    <!-- Bouncy Castle TLS (optional, if using BC's JSSE implementation directly) -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bctls-jdk18on</artifactId>
+      <version>1.83</version> <!-- Use the latest version -->
+    </dependency>
+    <!-- Netty dependencies (ensure you have the necessary Netty modules, e.g., netty-handler) -->
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
-      <version>4.2.9.Final</version>
+      <version>4.1.110.Final</version>
     </dependency>
--->
-      <!-- Bouncy Castle Provider (core crypto) -->
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk18on</artifactId>
-        <version>1.83</version> <!-- Use the latest version -->
-      </dependency>
-      <!-- Bouncy Castle PKIX (for certificate handling) -->
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk18on</artifactId>
-        <version>1.83</version> <!-- Use the latest version -->
-      </dependency>
-      <!-- Bouncy Castle TLS (optional, if using BC's JSSE implementation directly) -->
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bctls-jdk18on</artifactId>
-        <version>1.83</version> <!-- Use the latest version -->
-      </dependency>
-      <!-- Netty dependencies (ensure you have the necessary Netty modules, e.g., netty-handler) -->
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-all</artifactId>
-        <version>4.1.110.Final</version> <!-- Use the latest Netty 4.1.x version -->
-      </dependency>
   </dependencies>
 </project>
 
