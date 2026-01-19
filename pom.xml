@@ -339,7 +339,17 @@
     <!-- Netty dependencies (ensure you have the necessary Netty modules, e.g., netty-handler) -->
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty-all</artifactId>
+      <artifactId>netty-common</artifactId>
+      <version>4.1.130.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport</artifactId>
+      <version>4.1.130.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-handler</artifactId>
       <version>4.1.130.Final</version>
     </dependency>
   </dependencies>
