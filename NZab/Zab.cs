@@ -245,10 +245,15 @@ namespace NZab
                     }
                 }
                 // Creates transport.
-                // Note: NettyTransport needs to be replaced by a C# equivalent
-                // this.transport = new NettyTransport(...);
+                transport = new NettyTransport(
+                    outer.serverId,
+                    this,
+                    persistence.GetLogDir());
 
-                // election = new FastLeaderElection(persistence, transport, messageQueue);
+                election = new FastLeaderElection(
+                    persistence,
+                    transport,
+                    messageQueue);
 
                 participantState = new ParticipantState(persistence,
                                                         outer.serverId,
@@ -301,7 +306,7 @@ namespace NZab
                 }
                 finally
                 {
-                    participantState.GetTransport().Shutdown();
+                    participantState.GetTransport()?.Shutdown();
                 }
                 if (stateChangeCallback != null)
                 {
@@ -376,7 +381,7 @@ namespace NZab
             {
                 this.participantState.EnqueueShutdown();
                 this.outer.task.Wait();
-                this.transport.Shutdown();
+                this.transport?.Shutdown();
             }
 
             protected void ClearMessageQueue()
