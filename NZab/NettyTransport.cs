@@ -227,7 +227,7 @@ namespace NZab
                 // Attach the Sender to this channel. Subsequent handlers use this
                 // information to determine origins of messages.
                 ctx.Channel.GetAttribute(SENDER).Set(remoteId);
-                ctx.Pipeline.Remove(this);
+                ctx.Channel.Pipeline.Remove(this);
             }
         }
 
@@ -539,7 +539,7 @@ namespace NZab
                 {
                     if (transport.IsSslEnabled())
                     {
-                        ch.Pipeline.AddLast(new TlsHandler(transport.clientCertificate, new TlsSettings(TlsRequirement.All, true, null, null)));
+                        ch.Pipeline.AddLast(new TlsHandler(stream => new System.Net.Security.SslStream(stream, true, (sender, certificate, chain, errors) => true), new ClientTlsSettings("localhost", new List<X509Certificate> { transport.clientCertificate })));
                     }
                     // Inbound handlers.
                     ch.Pipeline.AddLast("clientError", new ClientErrorHandler(transport));
@@ -600,15 +600,14 @@ namespace NZab
                 // Removes length prepender, we don't need this handler for file transferring.
                 channel.Pipeline.Remove(prepender);
                 // Adds ChunkedWriteHandler for file transferring.
-                var cwh = new ChunkedWriteHandler<>();
+                var cwh = new ChunkedWriteHandler<IByteBuffer>();
                 channel.Pipeline.AddLast(cwh);
                 
                 // Begins file transferring.
                 if (channel.Pipeline.Get<TlsHandler>() != null)
                 {
                     // Zero-Copy file transferring is not supported for ssl in Java Netty. 
-                    // DotNetty's ChunkedFile equivalent.
-                    await channel.WriteAndFlushAsync(new ChunkedFile(file.FullName));
+                    await channel.WriteAndFlushAsync(new ChunkedStream(new FileStream(file.FullName, FileMode.Open, FileAccess.Read)));
                 }
                 else
                 {
