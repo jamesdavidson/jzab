@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+using jzab;
+
 namespace NZab
 {
     /**

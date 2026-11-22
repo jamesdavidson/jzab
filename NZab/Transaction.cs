@@ -21,7 +21,7 @@ namespace NZab
     /**
      * Transaction.
      */
-    internal class Transaction
+    public class Transaction
     {
         private readonly Zxid zxid;
         private readonly byte[] body;

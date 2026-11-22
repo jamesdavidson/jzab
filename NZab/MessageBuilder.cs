@@ -438,6 +438,14 @@ namespace NZab
         }
 
         /**
+         * Converts protobuf ClusterConfiguration object to ClusterConfiguration object.
+         */
+        public static ClusterConfiguration FromProtoConfig(JClusterConfiguration config, string serverId)
+        {
+            return new ClusterConfiguration(FromProtoZxid(config.version), config.servers, serverId);
+        }
+
+        /**
          * Creates a SYNC_END message.
          */
         public static JMessage BuildSyncEnd(ClusterConfiguration config)

@@ -20,6 +20,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using jzab;
 
 namespace NZab
 {
@@ -180,10 +181,10 @@ namespace NZab
                 MessageTuple tuple = filter.GetMessage(GetSyncTimeoutMs());
                 source = tuple.GetServerId();
                 msg = tuple.GetMessage();
-                if ((msg.GetType() != Message.MessageType.DIFF &&
-                     msg.GetType() != Message.MessageType.TRUNCATE &&
-                     msg.GetType() != Message.MessageType.SNAPSHOT &&
-                     msg.GetType() != Message.MessageType.PULL_TXN_REQ) ||
+                if ((msg.type != Message.MessageType.DIFF &&
+                     msg.type != Message.MessageType.TRUNCATE &&
+                     msg.type != Message.MessageType.SNAPSHOT &&
+                     msg.type != Message.MessageType.PULL_TXN_REQ) ||
                     !source.Equals(peer))
                 {
                     continue;
@@ -194,14 +195,14 @@ namespace NZab
                 }
             }
 
-            if (msg.GetType() == Message.MessageType.PULL_TXN_REQ)
+            if (msg.type == Message.MessageType.PULL_TXN_REQ)
             {
-                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.GetPullTxnReq().GetLastZxid());
+                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.pull_txn_req.last_zxid);
                 SyncPeerTask syncTask = new SyncPeerTask(this, source, lastZxidPeer, lastZxid, this.persistence.GetLastSeenConfig());
                 syncTask.Run();
                 MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.DIFF, peer, GetSyncTimeoutMs());
                 msg = tuple.GetMessage();
-                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.GetDiff().GetLastZxid());
+                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.diff.last_zxid);
                 if (lastZxidPeer.CompareTo(lastZxid) != 0)
                 {
                     throw new Exception("Expecting leader and follower have same history.");
@@ -210,19 +211,19 @@ namespace NZab
                 return;
             }
 
-            if (msg.GetType() == Message.MessageType.DIFF)
+            if (msg.type == Message.MessageType.DIFF)
             {
-                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.GetDiff().GetLastZxid());
+                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.diff.last_zxid);
                 if (lastZxid.CompareTo(lastZxidPeer) == 0)
                 {
                     WaitForSyncEnd(peer);
                     return;
                 }
             }
-            else if (msg.GetType() == Message.MessageType.TRUNCATE)
+            else if (msg.type == Message.MessageType.TRUNCATE)
             {
-                Zxid lastPrefixZxid = MessageBuilder.FromProtoZxid(msg.GetTruncate().GetLastPrefixZxid());
-                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.GetTruncate().GetLastZxid());
+                Zxid lastPrefixZxid = MessageBuilder.FromProtoZxid(msg.truncate.last_prefix_zxid);
+                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.truncate.last_zxid);
                 if (lastZxidPeer.Equals(Zxid.ZXID_NOT_EXIST))
                 {
                     persistence.BeginStateTransfer();
@@ -239,10 +240,10 @@ namespace NZab
             }
             else
             {
-                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.GetSnapshot().GetLastZxid());
-                Zxid snapZxid = MessageBuilder.FromProtoZxid(msg.GetSnapshot().GetSnapZxid());
+                lastZxidPeer = MessageBuilder.FromProtoZxid(msg.snapshot.last_zxid);
+                Zxid snapZxid = MessageBuilder.FromProtoZxid(msg.snapshot.snap_zxid);
                 msg = filter.GetExpectedMessage(Message.MessageType.FILE_RECEIVED, peer, GetSyncTimeoutMs()).GetMessage();
-                string filePath = msg.GetFileReceived().GetFullPath();
+                string filePath = msg.file_received.full_path;
                 persistence.BeginStateTransfer();
                 persistence.SetSnapshotFile(filePath, snapZxid);
                 log.Truncate(Zxid.ZXID_NOT_EXIST);
@@ -259,8 +260,8 @@ namespace NZab
                 MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.PROPOSAL, peer, GetSyncTimeoutMs());
                 msg = tuple.GetMessage();
                 source = tuple.GetServerId();
-                var prop = msg.GetProposal();
-                Zxid zxid = MessageBuilder.FromProtoZxid(prop.GetZxid());
+                var prop = msg.proposal;
+                Zxid zxid = MessageBuilder.FromProtoZxid(prop.zxid);
                 log.Append(MessageBuilder.FromProposal(prop));
                 if (zxid.CompareTo(lastZxidPeer) == 0)
                 {
@@ -273,7 +274,7 @@ namespace NZab
         void WaitForSyncEnd(string peerId)
         {
             MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.SYNC_END, peerId, GetSyncTimeoutMs());
-            ClusterConfiguration cnf = ClusterConfiguration.FromProto(tuple.GetMessage().GetConfig(), this.serverId);
+            ClusterConfiguration cnf = MessageBuilder.FromProtoConfig(tuple.GetMessage().config, this.serverId);
             this.persistence.SetLastSeenConfig(cnf);
             if (persistence.IsInStateTransfer())
             {
@@ -332,7 +333,7 @@ namespace NZab
 
         protected void OnDelivered(Message msg)
         {
-            this.lastDeliveredZxid = MessageBuilder.FromProtoZxid(msg.GetDelivered().GetZxid());
+            this.lastDeliveredZxid = MessageBuilder.FromProtoZxid(msg.delivered.zxid);
         }
 
         protected void OnFlush(MessageTuple tuple)
@@ -352,11 +353,11 @@ namespace NZab
             while (messageQueue.TryTake(out tuple))
             {
                 Message msg = tuple.GetMessage();
-                if (msg.GetType() == Message.MessageType.DISCONNECTED)
+                if (msg.type == Message.MessageType.DISCONNECTED)
                 {
-                    this.transport.Clear(msg.GetDisconnected().GetServerId());
+                    this.transport.Clear(msg.disconnected.server_id);
                 }
-                else if (msg.GetType() == Message.MessageType.SHUT_DOWN)
+                else if (msg.type == Message.MessageType.SHUT_DOWN)
                 {
                     throw new LeftCluster("Shutdown Zab.");
                 }

@@ -32,9 +32,7 @@ using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
 using DotNetty.Common.Utilities;
-using Google.Protobuf;
 using Microsoft.Extensions.Logging;
-using Structmap.NZab;
 
 namespace NZab
 {

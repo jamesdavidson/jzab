@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using jzab;
 
 namespace NZab
 {
@@ -40,7 +41,7 @@ namespace NZab
             {
                 throw new TimeoutException("Timeout while waiting for the message.");
             }
-            if (tuple.GetMessage().GetType() == Message.MessageType.SHUT_DOWN)
+            if (tuple.GetMessage().type == Message.MessageType.SHUT_DOWN)
             {
                 throw new Participant.LeftCluster("Left cluster");
             }
@@ -58,7 +59,7 @@ namespace NZab
 
                 MessageTuple tuple = GetMessage(remainMs);
                 string from = tuple.GetServerId();
-                if (tuple.GetMessage().GetType() == type && (source == null || source.Equals(from)))
+                if (tuple.GetMessage().type == type && (source == null || source.Equals(from)))
                 {
                     return tuple;
                 }
