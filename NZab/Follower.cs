@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using jzab;
 
 namespace NZab
 {
@@ -29,6 +30,8 @@ namespace NZab
      */
     internal class Follower : Participant
     {
+        private long ackEpoch;
+
         public Follower(ParticipantState participantState,
                         StateMachine stateMachine,
                         ZabConfig config)
@@ -108,7 +111,7 @@ namespace NZab
                         Thread.Sleep(1000);
                     }
                 }
-                this.electedLeader = tuple.GetMessage().GetReply().GetLeader();
+                this.electedLeader = tuple.GetMessage().reply.leader;
 
                 while (true)
                 {
@@ -181,13 +184,13 @@ namespace NZab
         void WaitForNewEpoch()
         {
             MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.NEW_EPOCH, this.electedLeader, config.GetTimeoutMs());
-            var epoch = tuple.GetMessage().GetNewEpoch();
-            if (epoch.GetNewEpoch() < persistence.GetProposedEpoch())
+            var epoch = tuple.GetMessage().new_epoch;
+            if (epoch.new_epoch < persistence.GetProposedEpoch())
             {
                 throw new Exception("New epoch is smaller than current one.");
             }
-            persistence.SetProposedEpoch(epoch.GetNewEpoch());
-            SetSyncTimeoutMs(epoch.GetSyncTimeout());
+            persistence.SetProposedEpoch(epoch.new_epoch);
+            SetSyncTimeoutMs(epoch.sync_timeout);
             Zxid zxid = persistence.GetLatestZxid();
             SendMessage(this.electedLeader, MessageBuilder.BuildAckEpoch(persistence.GetAckEpoch(), zxid));
         }
@@ -195,7 +198,7 @@ namespace NZab
         void WaitForNewLeaderMessage()
         {
             MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.NEW_LEADER, this.electedLeader, config.GetTimeoutMs());
-            long epoch = tuple.GetMessage().GetNewLeader().GetEpoch();
+            long epoch = tuple.GetMessage().new_leader.epoch;
             persistence.GetLog().Sync();
             persistence.SetAckEpoch(epoch);
             Message ack = MessageBuilder.BuildAck(persistence.GetLatestZxid());
@@ -205,7 +208,7 @@ namespace NZab
         void WaitForCommitMessage()
         {
             MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.COMMIT, this.electedLeader, config.GetTimeoutMs());
-            Zxid zxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().GetCommit().GetZxid());
+            Zxid zxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().commit.zxid);
             Zxid lastZxid = persistence.GetLatestZxid();
             if (zxid.CompareTo(lastZxid) != 0)
             {
@@ -245,33 +248,33 @@ namespace NZab
                         {
                             throw new TimeoutException("HEARTBEAT timeout!");
                         }
-                        if (msg.GetType() == Message.MessageType.QUERY_LEADER)
+                        if (msg.type == Message.MessageType.QUERY_LEADER)
                         {
                             Message reply = MessageBuilder.BuildQueryReply(this.electedLeader);
                             SendMessage(source, reply);
                         }
-                        else if (msg.GetType() == Message.MessageType.ELECTION_INFO)
+                        else if (msg.type == Message.MessageType.ELECTION_INFO)
                         {
                             this.election.Reply(tuple);
                         }
-                        else if (msg.GetType() == Message.MessageType.DELIVERED)
+                        else if (msg.type == Message.MessageType.DELIVERED)
                         {
                             OnDelivered(msg);
                         }
-                        else if (msg.GetType() == Message.MessageType.SNAPSHOT)
+                        else if (msg.type == Message.MessageType.SNAPSHOT)
                         {
                             snapProcessor.ProcessRequest(tuple);
                         }
-                        else if (msg.GetType() == Message.MessageType.SNAPSHOT_DONE)
+                        else if (msg.type == Message.MessageType.SNAPSHOT_DONE)
                         {
                             commitProcessor.ProcessRequest(tuple);
                         }
                         continue;
                     }
 
-                    if (msg.GetType() == Message.MessageType.PROPOSAL)
+                    if (msg.type == Message.MessageType.PROPOSAL)
                     {
-                        Transaction txn = MessageBuilder.FromProposal(msg.GetProposal());
+                        Transaction txn = MessageBuilder.FromProposal(msg.proposal);
                         if (txn.GetZxid().GetEpoch() == ackEpoch)
                         {
                             OnProposal(tuple);
@@ -281,16 +284,16 @@ namespace NZab
                             throw new Exception("The proposal has wrong epoch number.");
                         }
                     }
-                    else if (msg.GetType() == Message.MessageType.COMMIT)
+                    else if (msg.type == Message.MessageType.COMMIT)
                     {
                         commitProcessor.ProcessRequest(tuple);
                     }
-                    else if (msg.GetType() == Message.MessageType.HEARTBEAT)
+                    else if (msg.type == Message.MessageType.HEARTBEAT)
                     {
                         Message heartbeatReply = MessageBuilder.BuildHeartbeat();
                         SendMessage(source, heartbeatReply);
                     }
-                    else if (msg.GetType() == Message.MessageType.FLUSH)
+                    else if (msg.type == Message.MessageType.FLUSH)
                     {
                         OnFlush(tuple);
                     }
@@ -311,7 +314,7 @@ namespace NZab
             Message sync = MessageBuilder.BuildSyncHistory(persistence.GetLatestZxid());
             SendMessage(this.electedLeader, sync);
             MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.SYNC_HISTORY_REPLY, electedLeader, config.GetTimeoutMs());
-            setSyncTimeoutMs(tuple.GetMessage().GetSyncHistoryReply().GetSyncTimeout());
+            SetSyncTimeoutMs(tuple.GetMessage().sync_history_reply.sync_timeout);
             WaitForSync(this.electedLeader);
 
             Zxid lastZxid = persistence.GetLatestZxid();
@@ -343,9 +346,9 @@ namespace NZab
                     int remainMs = timeoutMs - (int)(nowMs - startMs);
                     if (remainMs < 0) remainMs = 0;
                     MessageTuple tuple = base.GetMessage(remainMs);
-                    if (tuple.GetMessage().GetType() == Message.MessageType.DISCONNECTED)
+                    if (tuple.GetMessage().type == Message.MessageType.DISCONNECTED)
                     {
-                        string peerId = tuple.GetMessage().GetDisconnected().GetServerId();
+                        string peerId = tuple.GetMessage().disconnected.server_id;
                         if (follower.electedLeader != null && peerId.Equals(follower.electedLeader))
                         {
                             throw new BackToElectionException();
@@ -355,7 +358,7 @@ namespace NZab
                             follower.transport.Clear(peerId);
                         }
                     }
-                    else if (tuple.GetMessage().GetType() == Message.MessageType.PROPOSED_EPOCH)
+                    else if (tuple.GetMessage().type == Message.MessageType.PROPOSED_EPOCH)
                     {
                         follower.transport.Clear(tuple.GetServerId());
                     }

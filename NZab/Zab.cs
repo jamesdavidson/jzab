@@ -20,6 +20,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using jzab;
 
 namespace NZab
 {
@@ -384,11 +385,11 @@ namespace NZab
                 while (messageQueue.TryTake(out tuple))
                 {
                     Message msg = tuple.GetMessage();
-                    if (msg.GetType() == Message.MessageType.DISCONNECTED)
+                    if (msg.type == Message.MessageType.DISCONNECTED)
                     {
-                        this.transport.Clear(msg.GetDisconnected().GetServerId());
+                        this.transport.Clear(msg.disconnected.server_id);
                     }
-                    else if (msg.GetType() == Message.MessageType.SHUT_DOWN)
+                    else if (msg.type == Message.MessageType.SHUT_DOWN)
                     {
                         throw new Participant.LeftCluster("Shutdown Zab.");
                     }

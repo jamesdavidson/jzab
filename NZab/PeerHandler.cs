@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using jzab;
 
 namespace NZab
 {
@@ -152,7 +153,7 @@ namespace NZab
                     SendMessage(heartbeat);
                     continue;
                 }
-                if (msg.GetType() == Message.MessageType.SHUT_DOWN) return;
+                if (msg.type == Message.MessageType.SHUT_DOWN) return;
                 SendMessage(msg);
             }
         }

@@ -20,6 +20,7 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
+using jzab;
 
 namespace NZab
 {
@@ -69,9 +70,9 @@ namespace NZab
                     if (request == MessageTuple.REQUEST_OF_DEATH) break;
 
                     Message msg = request.GetMessage();
-                    if (msg.GetType() == Message.MessageType.SNAPSHOT)
+                    if (msg.type == Message.MessageType.SNAPSHOT)
                     {
-                        Zxid zxid = MessageBuilder.FromProtoZxid(msg.GetSnapshot().GetLastZxid());
+                        Zxid zxid = MessageBuilder.FromProtoZxid(msg.snapshot.last_zxid);
                         string temp = persistence.CreateTempFile("snapshot");
                         using (FileStream fout = new FileStream(temp, FileMode.Open, FileAccess.Write))
                         {

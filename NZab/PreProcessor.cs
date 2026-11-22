@@ -80,11 +80,11 @@ namespace NZab
                     string source = request.GetServerId();
                     Zxid zxid = request.GetZxid();
 
-                    if (msg.GetType() == Message.MessageType.REQUEST)
+                    if (msg.type == Message.MessageType.REQUEST)
                     {
-                        var req = msg.GetRequest();
+                        var req = msg.request;
                         string clientId = request.GetServerId();
-                        byte[] update = stateMachine.Preprocess(zxid, req.GetRequest());
+                        byte[] update = stateMachine.Preprocess(zxid, req.request);
                         Transaction txn = new Transaction(zxid, update);
                         Message prop = MessageBuilder.BuildProposal(txn, clientId);
                         foreach (PeerHandler ph in quorumMap.Values)
@@ -92,7 +92,7 @@ namespace NZab
                             ph.QueueMessage(prop);
                         }
                     }
-                    else if (msg.GetType() == Message.MessageType.JOIN)
+                    else if (msg.type == Message.MessageType.JOIN)
                     {
                         if (!clusterConfig.Contains(source))
                         {
@@ -106,13 +106,13 @@ namespace NZab
                         }
                         AddToQuorumSet(source);
                     }
-                    else if (msg.GetType() == Message.MessageType.ACK_EPOCH)
+                    else if (msg.type == Message.MessageType.ACK_EPOCH)
                     {
                         AddToQuorumSet(source);
                     }
-                    else if (msg.GetType() == Message.MessageType.REMOVE)
+                    else if (msg.type == Message.MessageType.REMOVE)
                     {
-                        string peerId = msg.GetRemove().GetServerId();
+                        string peerId = msg.remove.serverId;
                         string clientId = request.GetServerId();
                         clusterConfig.RemovePeer(peerId);
                         clusterConfig.SetVersion(zxid);
@@ -123,9 +123,9 @@ namespace NZab
                         }
                         RemoveFromQuorumSet(peerId);
                     }
-                    else if (msg.GetType() == Message.MessageType.DISCONNECTED)
+                    else if (msg.type == Message.MessageType.DISCONNECTED)
                     {
-                        string peerId = msg.GetDisconnected().GetServerId();
+                        string peerId = msg.disconnected.server_id;
                         RemoveFromQuorumSet(peerId);
                     }
                 }

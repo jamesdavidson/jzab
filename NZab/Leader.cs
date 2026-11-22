@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using jzab;
 
 namespace NZab
 {
@@ -49,7 +50,6 @@ namespace NZab
                       ZabConfig config)
             : base(participantState, stateMachine, config)
         {
-            this.electedLeader = participantState.GetServerId();
             filter = new LeaderFilter(messageQueue, election, this);
         }
 
@@ -189,11 +189,11 @@ namespace NZab
                 MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.PROPOSED_EPOCH, null, config.GetTimeoutMs());
                 Message msg = tuple.GetMessage();
                 string source = tuple.GetServerId();
-                var epoch = msg.GetProposedEpoch();
-                ClusterConfiguration peerConfig = ClusterConfiguration.FromProto(epoch.GetConfig(), source);
-                long peerProposedEpoch = epoch.GetProposedEpoch();
-                long peerAckedEpoch = epoch.GetCurrentEpoch();
-                int syncTimeoutMs = epoch.GetSyncTimeout();
+                var epoch = msg.proposed_epoch;
+                ClusterConfiguration peerConfig = ClusterConfiguration.FromProto(epoch.config, source);
+                long peerProposedEpoch = epoch.proposed_epoch;
+                long peerAckedEpoch = epoch.current_epoch;
+                int syncTimeoutMs = epoch.sync_timeout;
                 Zxid peerVersion = peerConfig.GetVersion();
                 Zxid selfVersion = currentConfig.GetVersion();
 
@@ -246,10 +246,10 @@ namespace NZab
                 string source = tuple.GetServerId();
                 if (!this.quorumMap.ContainsKey(source)) continue;
                 ackCount++;
-                var ackEpoch = tuple.GetMessage().GetAckEpoch();
+                var ackEpoch = tuple.GetMessage().ack_epoch;
                 PeerHandler ph = this.quorumMap[source];
-                ph.SetLastAckedEpoch(ackEpoch.GetAcknowledgedEpoch());
-                ph.SetLastZxid(MessageBuilder.FromProtoZxid(ackEpoch.GetLastZxid()));
+                ph.SetLastAckedEpoch(ackEpoch.acknowledged_epoch);
+                ph.SetLastZxid(MessageBuilder.FromProtoZxid(ackEpoch.lastZxid));
             }
         }
 
@@ -292,11 +292,11 @@ namespace NZab
             {
                 MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.ACK, null, GetSyncTimeoutMs());
                 string source = tuple.GetServerId();
-                Zxid zxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().GetAck().GetZxid());
+                Zxid zxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().ack.zxid);
                 if (!this.quorumMap.ContainsKey(source)) continue;
                 if (zxid.CompareTo(lastZxid) != 0) throw new Exception("Follower not correctly synchronized.");
                 PeerHandler ph = this.quorumMap[source];
-                ph.SetLastAckedZxid(zxid);
+                ph.SetLastSyncedZxid(zxid);
                 completeCount++;
             }
         }
@@ -356,9 +356,9 @@ namespace NZab
                     MessageTuple tuple = filter.GetMessage(config.GetTimeoutMs());
                     Message msg = tuple.GetMessage();
                     string source = tuple.GetServerId();
-                    if (msg.GetType() == Message.MessageType.DISCONNECTED)
+                    if (msg.type == Message.MessageType.DISCONNECTED)
                     {
-                        string peerId = msg.GetDisconnected().GetServerId();
+                        string peerId = msg.disconnected.server_id;
                         if (quorumMap.ContainsKey(peerId)) OnDisconnected(tuple);
                         else this.transport.Clear(peerId);
                         continue;
@@ -392,30 +392,30 @@ namespace NZab
         {
             Message msg = tuple.GetMessage();
             string source = tuple.GetServerId();
-            if (msg.GetType() == Message.MessageType.PROPOSED_EPOCH)
+            if (msg.type == Message.MessageType.PROPOSED_EPOCH)
             {
                 ClusterConfiguration cnf = persistence.GetLastSeenConfig();
                 if (!cnf.Contains(source)) return;
-                int syncTimeoutMs = msg.GetProposedEpoch().GetSyncTimeout();
+                int syncTimeoutMs = msg.proposed_epoch.sync_timeout;
                 if (syncTimeoutMs > GetSyncTimeoutMs()) SetSyncTimeoutMs(syncTimeoutMs);
                 Message newEpoch = MessageBuilder.BuildNewEpochMessage(establishedEpoch, GetSyncTimeoutMs());
                 SendMessage(source, newEpoch);
             }
-            else if (msg.GetType() == Message.MessageType.ACK_EPOCH)
+            else if (msg.type == Message.MessageType.ACK_EPOCH)
             {
                 tuple.SetZxid(lastProposedZxid);
                 OnAckEpoch(tuple);
             }
-            else if (msg.GetType() == Message.MessageType.QUERY_LEADER)
+            else if (msg.type == Message.MessageType.QUERY_LEADER)
             {
                 Message reply = MessageBuilder.BuildQueryReply(this.serverId);
                 SendMessage(source, reply);
             }
-            else if (msg.GetType() == Message.MessageType.SYNC_HISTORY)
+            else if (msg.type == Message.MessageType.SYNC_HISTORY)
             {
                 OnSyncHistory(tuple);
             }
-            else if (msg.GetType() == Message.MessageType.ELECTION_INFO)
+            else if (msg.type == Message.MessageType.ELECTION_INFO)
             {
                 this.election.Reply(tuple);
             }
@@ -425,40 +425,40 @@ namespace NZab
         {
             Message msg = tuple.GetMessage();
             string source = tuple.GetServerId();
-            if (msg.GetType() == Message.MessageType.ACK) OnAck(tuple);
-            else if (msg.GetType() == Message.MessageType.REQUEST)
+            if (msg.type == Message.MessageType.ACK) OnAck(tuple);
+            else if (msg.type == Message.MessageType.REQUEST)
             {
                 Zxid proposedZxid = GetNextProposedZxid();
                 quorumMap[source].SetLastProposedZxid(proposedZxid);
                 tuple.SetZxid(proposedZxid);
                 preProcessor.ProcessRequest(tuple);
             }
-            else if (msg.GetType() == Message.MessageType.FLUSH_REQ) OnFlushReq(tuple);
-            else if (msg.GetType() == Message.MessageType.FLUSH) OnFlush(tuple);
-            else if (msg.GetType() == Message.MessageType.PROPOSAL) OnProposal(tuple);
-            else if (msg.GetType() == Message.MessageType.COMMIT) OnCommit(tuple);
-            else if (msg.GetType() == Message.MessageType.REMOVE)
+            else if (msg.type == Message.MessageType.FLUSH_REQ) OnFlushReq(tuple);
+            else if (msg.type == Message.MessageType.FLUSH) OnFlush(tuple);
+            else if (msg.type == Message.MessageType.PROPOSAL) OnProposal(tuple);
+            else if (msg.type == Message.MessageType.COMMIT) OnCommit(tuple);
+            else if (msg.type == Message.MessageType.REMOVE)
             {
                 if (pendingCopZxid != null) return;
                 pendingCopZxid = GetNextProposedZxid();
                 tuple.SetZxid(pendingCopZxid);
                 OnRemove(tuple);
             }
-            else if (msg.GetType() == Message.MessageType.DELIVERED) OnDelivered(msg);
-            else if (msg.GetType() == Message.MessageType.JOIN)
+            else if (msg.type == Message.MessageType.DELIVERED) OnDelivered(msg);
+            else if (msg.type == Message.MessageType.JOIN)
             {
                 if (pendingCopZxid != null) return;
                 pendingCopZxid = GetNextProposedZxid();
                 tuple.SetZxid(pendingCopZxid);
                 OnJoin(tuple);
             }
-            else if (msg.GetType() == Message.MessageType.SNAPSHOT) snapProcessor.ProcessRequest(tuple);
-            else if (msg.GetType() == Message.MessageType.SNAPSHOT_DONE) commitProcessor.ProcessRequest(tuple);
+            else if (msg.type == Message.MessageType.SNAPSHOT) snapProcessor.ProcessRequest(tuple);
+            else if (msg.type == Message.MessageType.SNAPSHOT_DONE) commitProcessor.ProcessRequest(tuple);
         }
 
         void OnJoin(MessageTuple tuple)
         {
-            Zxid lastZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().GetJoin().GetLastZxid());
+            Zxid lastZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().join.lastZxid);
             string source = tuple.GetServerId();
             PeerHandler ph = new PeerHandler(source, transport, config.GetTimeoutMs() / 3);
             ph.SetLastZxid(lastZxid);
@@ -473,7 +473,7 @@ namespace NZab
 
         void OnCommit(MessageTuple tuple)
         {
-            this.lastCommittedZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().GetCommit().GetZxid());
+            this.lastCommittedZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().commit.zxid);
             if (pendingCopZxid != null && lastCommittedZxid.CompareTo(this.pendingCopZxid) >= 0)
             {
                 pendingCopZxid = null;
@@ -501,7 +501,7 @@ namespace NZab
 
         void OnDisconnected(MessageTuple tuple)
         {
-            string peerId = tuple.GetMessage().GetDisconnected().GetServerId();
+            string peerId = tuple.GetMessage().disconnected.server_id;
             pendingPeers.Remove(peerId);
             PeerHandler ph;
             if (this.quorumMap.TryGetValue(peerId, out ph))
@@ -518,7 +518,7 @@ namespace NZab
         Zxid OnAck(MessageTuple tuple)
         {
             string source = tuple.GetServerId();
-            Zxid ackZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().GetAck().GetZxid());
+            Zxid ackZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().ack.zxid);
             PeerHandler peer;
             if (pendingPeers.TryGetValue(source, out peer))
             {
@@ -553,7 +553,7 @@ namespace NZab
         {
             string source = tuple.GetServerId();
             Zxid lastZxidOfSync = tuple.GetZxid();
-            Zxid lastPeerZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().GetAckEpoch().GetLastZxid());
+            Zxid lastPeerZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().ack_epoch.lastZxid);
             PeerHandler ph = new PeerHandler(source, transport, config.GetTimeoutMs() / 3);
             ph.SetLastZxid(lastPeerZxid);
             ph.SetLastSyncedZxid(lastZxidOfSync);
@@ -572,7 +572,7 @@ namespace NZab
 
         void OnRemove(MessageTuple tuple)
         {
-            string peerId = tuple.GetMessage().GetRemove().GetServerId();
+            string peerId = tuple.GetMessage().remove.serverId;
             clusterConfig.RemovePeer(peerId);
             preProcessor.ProcessRequest(tuple);
             ackProcessor.ProcessRequest(tuple);
@@ -583,7 +583,7 @@ namespace NZab
             string source = tuple.GetServerId();
             PeerHandler ph = quorumMap[source];
             Zxid zxid = ph.GetLastProposedZxid();
-            byte[] body = tuple.GetMessage().GetFlushRequest().GetBody();
+            byte[] body = tuple.GetMessage().flush_request.body;
             Message msg = MessageBuilder.BuildFlush(zxid, body);
             SendMessage(source, msg);
         }
@@ -592,7 +592,7 @@ namespace NZab
         {
             string source = tuple.GetServerId();
             PeerHandler ph = new PeerHandler(source, transport, config.GetTimeoutMs() / 3);
-            Zxid lastZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().GetSyncHistory().GetLastZxid());
+            Zxid lastZxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().sync_history.last_zxid);
             ph.SetLastZxid(lastZxid);
             ph.SetLastSyncedZxid(this.lastAckedZxid);
             ClusterConfiguration cnf = persistence.GetLastConfigWithin(ph.GetLastSyncedZxid());
@@ -650,9 +650,9 @@ namespace NZab
                     int remainMs = timeoutMs - (int)(nowMs - startMs);
                     if (remainMs < 0) remainMs = 0;
                     MessageTuple tuple = base.GetMessage(remainMs);
-                    if (tuple.GetMessage().GetType() == Message.MessageType.DISCONNECTED)
+                    if (tuple.GetMessage().type == Message.MessageType.DISCONNECTED)
                     {
-                        string peerId = tuple.GetMessage().GetDisconnected().GetServerId();
+                        string peerId = tuple.GetMessage().disconnected.server_id;
                         if (leader.quorumMap.ContainsKey(peerId))
                         {
                             if (leader.currentPhase != Phase.BROADCASTING) throw new BackToElectionException();

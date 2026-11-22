@@ -129,6 +129,15 @@ namespace jzab
 
         [ProtoMember(30)]
         public InvalidMessage invalid { get; set; }
+
+        public byte[] ToByteArray()
+        {
+            using (var ms = new System.IO.MemoryStream())
+            {
+                Serializer.Serialize(ms, this);
+                return ms.ToArray();
+            }
+        }
     }
 
     [ProtoContract]

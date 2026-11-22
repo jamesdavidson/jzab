@@ -22,6 +22,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using jzab;
 
 namespace NZab
 {
@@ -33,7 +34,7 @@ namespace NZab
         private readonly BlockingCollection<MessageTuple> commitQueue = new BlockingCollection<MessageTuple>();
         private readonly StateMachine stateMachine;
         private Zxid lastDeliveredZxid = Zxid.ZXID_NOT_EXIST;
-        private readonly List<ZabMessage.Proposal> pendingTxns = new List<ZabMessage.Proposal>();
+        private readonly List<jzab.Proposal> pendingTxns = new List<jzab.Proposal>();
         private readonly string serverId;
         private readonly Transport transport;
         private readonly HashSet<string> quorumSet;
@@ -80,14 +81,14 @@ namespace NZab
                     Message msg = request.GetMessage();
                     string source = request.GetServerId();
 
-                    if (msg.GetType() == Message.MessageType.PROPOSAL)
+                    if (msg.type == Message.MessageType.PROPOSAL)
                     {
-                        this.pendingTxns.Add(msg.GetProposal());
+                        this.pendingTxns.Add(msg.proposal);
                     }
-                    else if (msg.GetType() == Message.MessageType.COMMIT)
+                    else if (msg.type == Message.MessageType.COMMIT)
                     {
-                        var commit = msg.GetCommit();
-                        Zxid zxid = MessageBuilder.FromProtoZxid(commit.GetZxid());
+                        var commit = msg.commit;
+                        Zxid zxid = MessageBuilder.FromProtoZxid(commit.zxid);
                         if (zxid.CompareTo(this.lastDeliveredZxid) <= 0) continue;
 
                         int i = 0;
@@ -99,11 +100,11 @@ namespace NZab
 
                             if (txn.GetTransactionType() == 0 /* USER_REQUEST_VALUE */)
                             {
-                                DeliverTxn(txn, prop.GetClientId());
+                                DeliverTxn(txn, prop.clientId);
                             }
                             else if (txn.GetTransactionType() == 1 /* COP_VALUE */)
                             {
-                                DeliverConfiguration(txn, prop.GetClientId());
+                                DeliverConfiguration(txn, prop.clientId);
                                 if (!clusterConfig.Contains(this.serverId))
                                 {
                                     transport.Send(this.serverId, MessageBuilder.BuildShutDown());
@@ -117,33 +118,33 @@ namespace NZab
                         this.pendingTxns.RemoveRange(0, i);
                         transport.Send(this.serverId, MessageBuilder.BuildDelivered(lastDeliveredZxid));
                     }
-                    else if (msg.GetType() == Message.MessageType.ACK_EPOCH)
+                    else if (msg.type == Message.MessageType.ACK_EPOCH)
                     {
                         quorumSet.Add(source);
                         NotifyClient();
                     }
-                    else if (msg.GetType() == Message.MessageType.DISCONNECTED)
+                    else if (msg.type == Message.MessageType.DISCONNECTED)
                     {
-                        string peerId = msg.GetDisconnected().GetServerId();
+                        string peerId = msg.disconnected.server_id;
                         quorumSet.Remove(peerId);
                         NotifyClient();
                     }
-                    else if (msg.GetType() == Message.MessageType.JOIN)
+                    else if (msg.type == Message.MessageType.JOIN)
                     {
                         quorumSet.Add(source);
                     }
-                    else if (msg.GetType() == Message.MessageType.FLUSH)
+                    else if (msg.type == Message.MessageType.FLUSH)
                     {
-                        var flush = msg.GetFlush();
-                        Zxid zxid = MessageBuilder.FromProtoZxid(flush.GetZxid());
-                        flushQueue.Enqueue(new PendingFlush(zxid, flush.GetBody()));
+                        var flush = msg.flush;
+                        Zxid zxid = MessageBuilder.FromProtoZxid(flush.zxid);
+                        flushQueue.Enqueue(new PendingFlush(zxid, flush.body));
                         DeliverPendingFlushes(lastDeliveredZxid);
                     }
-                    else if (msg.GetType() == Message.MessageType.SNAPSHOT_DONE)
+                    else if (msg.type == Message.MessageType.SNAPSHOT_DONE)
                     {
                         object ctx = pendings.PendingSnapshots[0];
                         pendings.PendingSnapshots.RemoveAt(0);
-                        stateMachine.SnapshotDone(msg.GetSnapshotDone().GetFilePath(), ctx);
+                        stateMachine.SnapshotDone(msg.snapshot_done.file_path, ctx);
                     }
                 }
             }

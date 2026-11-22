@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using jzab;
 
 namespace NZab
 {
@@ -89,10 +90,10 @@ namespace NZab
                     Message msg = request.GetMessage();
                     string source = request.GetServerId();
 
-                    if (msg.GetType() == Message.MessageType.ACK)
+                    if (msg.type == Message.MessageType.ACK)
                     {
-                        var ack = msg.GetAck();
-                        Zxid zxid = MessageBuilder.FromProtoZxid(ack.GetZxid());
+                        var ack = msg.ack;
+                        Zxid zxid = MessageBuilder.FromProtoZxid(ack.zxid);
                         this.quorumMap[source].SetLastAckedZxid(zxid);
                         Zxid zxidCanCommit = null;
 
@@ -137,28 +138,28 @@ namespace NZab
                             }
                         }
                     }
-                    else if (msg.GetType() == Message.MessageType.JOIN || msg.GetType() == Message.MessageType.ACK_EPOCH)
+                    else if (msg.type == Message.MessageType.JOIN || msg.type == Message.MessageType.ACK_EPOCH)
                     {
                         PeerHandler ph;
                         if (quorumMapOriginal.TryGetValue(source, out ph))
                         {
                             this.quorumMap[source] = ph;
                         }
-                        if (msg.GetType() == Message.MessageType.JOIN)
+                        if (msg.type == Message.MessageType.JOIN)
                         {
                             this.pendingConfig = (ClusterConfiguration)this.clusterConfig.Clone();
                             this.pendingConfig.AddPeer(source);
                             this.pendingConfig.SetVersion(request.GetZxid());
                         }
                     }
-                    else if (msg.GetType() == Message.MessageType.DISCONNECTED)
+                    else if (msg.type == Message.MessageType.DISCONNECTED)
                     {
-                        string peerId = msg.GetDisconnected().GetServerId();
+                        string peerId = msg.disconnected.server_id;
                         this.quorumMap.Remove(peerId);
                     }
-                    else if (msg.GetType() == Message.MessageType.REMOVE)
+                    else if (msg.type == Message.MessageType.REMOVE)
                     {
-                        string srvId = msg.GetRemove().GetServerId();
+                        string srvId = msg.remove.serverId;
                         this.pendingConfig = (ClusterConfiguration)this.clusterConfig.Clone();
                         this.pendingConfig.RemovePeer(srvId);
                         this.pendingConfig.SetVersion(request.GetZxid());

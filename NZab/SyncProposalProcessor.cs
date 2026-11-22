@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using jzab;
 
 namespace NZab
 {
@@ -78,7 +79,7 @@ namespace NZab
                             if (batchCount > 0)
                             {
                                 this.log.Sync();
-                                Zxid zxid = MessageBuilder.FromProtoZxid(lastReq.GetMessage().GetProposal().GetZxid());
+                                Zxid zxid = MessageBuilder.FromProtoZxid(lastReq.GetMessage().proposal.zxid);
                                 SendAck(lastReq.GetServerId(), zxid);
                                 batchCount = 0;
                             }
@@ -87,7 +88,7 @@ namespace NZab
                         else if (batchCount == maxBatchSize || req == MessageTuple.REQUEST_OF_DEATH)
                         {
                             this.log.Sync();
-                            Zxid zxid = MessageBuilder.FromProtoZxid(lastReq.GetMessage().GetProposal().GetZxid());
+                            Zxid zxid = MessageBuilder.FromProtoZxid(lastReq.GetMessage().proposal.zxid);
                             SendAck(lastReq.GetServerId(), zxid);
                             batchCount = 0;
                         }
@@ -95,9 +96,9 @@ namespace NZab
 
                     if (req == MessageTuple.REQUEST_OF_DEATH) break;
 
-                    if (req.GetMessage().GetType() == Message.MessageType.PROPOSAL)
+                    if (req.GetMessage().type == Message.MessageType.PROPOSAL)
                     {
-                        var prop = req.GetMessage().GetProposal();
+                        var prop = req.GetMessage().proposal;
                         Transaction txn = MessageBuilder.FromProposal(prop);
                         batchCount++;
                         lastReq = req;

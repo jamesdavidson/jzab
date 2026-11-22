@@ -33,11 +33,13 @@ using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
 using DotNetty.Common.Utilities;
 using Microsoft.Extensions.Logging;
+using ProtoBuf;
+using jzab;
 
 namespace NZab
 {
     /**
-     * Netty-based transport.
+     * Netty transport implementation.
      */
     internal class NettyTransport : Transport
     {
@@ -104,10 +106,10 @@ namespace NZab
               .ChildOption(ChannelOption.TcpNodelay, true)
               .ChildHandler(new ActionChannelInitializer<ISocketChannel>(ch =>
               {
-                  if (IsSslEnabled())
-                  {
-                      ch.Pipeline.AddLast(new TlsHandler(serverCertificate, new TlsSettings(TlsRequirement.All, true, null, null)));
-                  }
+                if (IsSslEnabled())
+                {
+                    ch.Pipeline.AddLast(new TlsHandler(stream => new System.Net.Security.SslStream(stream, true), new ServerTlsSettings(serverCertificate, false, false, System.Security.Authentication.SslProtocols.Tls12)));
+                }
                   // Incoming handlers
                   ch.Pipeline.AddLast(new MainHandler(this));
                   ch.Pipeline.AddLast(new ServerHandshakeHandler(this));
@@ -205,14 +207,14 @@ namespace NZab
             protected override void ChannelRead0(IChannelHandlerContext ctx, Message msg)
             {
                 // Make sure it's a handshake message.
-                if (msg.Type != Message.Types.MessageType.Handshake)
+                if (msg.type != Message.MessageType.HANDSHAKE)
                 {
                     LOG.LogDebug("The first message from {0} was not a handshake",
                               ctx.Channel.RemoteAddress);
                     ctx.CloseAsync();
                     return;
                 }
-                string remoteId = msg.Handshake.NodeId;
+                string remoteId = msg.handshake.node_id;
 
                 if (!transport.receivers.TryAdd(remoteId, ctx))
                 {
@@ -256,15 +258,14 @@ namespace NZab
                 @in.ReadBytes(buffer);
                 try
                 {
-                    Message msg = Message.Parser.ParseFrom(buffer);
-                    return msg;
+                    using (var ms = new MemoryStream(buffer))
+                    {
+                        return Serializer.Deserialize<Message>(ms);
+                    }
                 }
-                catch (InvalidProtocolBufferException e)
+                catch (Exception e)
                 {
                     LOG.LogError(e, "Exception when parse protocol buffer.");
-                    // In C# ZabMessage, we don't have MessageBuilder easily available or similar InvalidMessage
-                    // So we might need to handle this differently or just throw.
-                    // For now, let's just return null or throw.
                     return null;
                 }
             }
@@ -278,10 +279,10 @@ namespace NZab
                     {
                         return;
                     }
-                    else if (msg.Type == Message.Types.MessageType.FileHeader)
+                    else if (msg.type == Message.MessageType.FILE_HEADER)
                     {
                         LOG.LogDebug("Got FILE_HEADER.");
-                        fileReceiver = new FileReceiver(msg.FileHeader.Length, transport.dir);
+                        fileReceiver = new FileReceiver(msg.file_header.length, transport.dir);
                     }
                     else
                     {
@@ -296,8 +297,8 @@ namespace NZab
                         string filePath = fileReceiver.FilePath;
                         Message msg = new Message
                         {
-                            Type = Message.Types.MessageType.FileReceived,
-                            FileReceived = new FileReceived { FullPath = filePath }
+                            type = Message.MessageType.FILE_RECEIVED,
+                            file_received = new FileReceived { full_path = filePath }
                         };
                         output.Add(msg);
                         // Resets it to null to switch back to normal decode mode.
@@ -565,8 +566,8 @@ namespace NZab
                         channel.GetAttribute(SENDER).Set(destination);
                         Message msg = new Message
                         {
-                            Type = Message.Types.MessageType.Handshake,
-                            Handshake = new Handshake { NodeId = transport.hostPort }
+                            type = Message.MessageType.HANDSHAKE,
+                            handshake = new Handshake { node_id = transport.hostPort }
                         };
                         byte[] bytes = msg.ToByteArray();
                         channel.WriteAndFlushAsync(Unpooled.WrappedBuffer(bytes));
@@ -588,8 +589,8 @@ namespace NZab
                           file.FullName, length);
                 Message header = new Message
                 {
-                    Type = Message.Types.MessageType.FileHeader,
-                    FileHeader = new FileHeader { Length = length }
+                    type = Message.MessageType.FILE_HEADER,
+                    file_header = new FileHeader { length = length }
                 };
                 byte[] bytes = header.ToByteArray();
                 // Sends FILE_HEADER first before transferring actual file data
@@ -599,7 +600,7 @@ namespace NZab
                 // Removes length prepender, we don't need this handler for file transferring.
                 channel.Pipeline.Remove(prepender);
                 // Adds ChunkedWriteHandler for file transferring.
-                var cwh = new ChunkedWriteHandler();
+                var cwh = new ChunkedWriteHandler<>();
                 channel.Pipeline.AddLast(cwh);
                 
                 // Begins file transferring.

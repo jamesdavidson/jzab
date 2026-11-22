@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Concurrent;
+using jzab;
 
 namespace NZab
 {

@@ -395,7 +395,7 @@ namespace NZab
             throw new Exception("Timeout is too large!");
         }
 
-        protected class SyncPeerTask
+        internal class SyncPeerTask
         {
             private readonly Participant outer;
             private readonly string peerId;

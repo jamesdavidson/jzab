@@ -21,13 +21,15 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
+using System.IO;
+using ProtoBuf;
 
 namespace NZab
 {
     /**
      * Configurations(ensemble of cluster, serverId, version).
      */
-    internal class ClusterConfiguration : ICloneable
+    public class ClusterConfiguration : ICloneable
     {
         private Zxid version;
         private readonly HashSet<string> peers;
@@ -40,6 +42,39 @@ namespace NZab
             this.version = version;
             this.peers = new HashSet<string>(peers);
             this.serverId = serverId;
+        }
+
+        public byte[] ToByteArray()
+        {
+            using (var ms = new MemoryStream())
+            {
+                Serializer.Serialize(ms, MessageBuilder.BuildConfig(this));
+                return ms.ToArray();
+            }
+        }
+
+        public static ClusterConfiguration FromByteArray(byte[] buffer, string serverId)
+        {
+            using (var ms = new MemoryStream(buffer))
+            {
+                var protoConfig = Serializer.Deserialize<jzab.ClusterConfiguration>(ms);
+                return MessageBuilder.FromProtoConfig(protoConfig, serverId);
+            }
+        }
+
+        public static ClusterConfiguration FromProto(jzab.ClusterConfiguration protoConfig, string serverId)
+        {
+            return MessageBuilder.FromProtoConfig(protoConfig, serverId);
+        }
+
+        public jzab.ClusterConfiguration ToProto()
+        {
+            return MessageBuilder.BuildConfig(this);
+        }
+
+        public Transaction ToTransaction()
+        {
+            return new Transaction(version, 1 /* COP_VALUE */, ToByteArray());
         }
 
         public Zxid GetVersion()
