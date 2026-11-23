@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using jzab;
 
 using Microsoft.Extensions.Logging;
@@ -58,6 +59,7 @@ namespace NZab
                       ZabConfig config)
             : base(participantState, stateMachine, config)
         {
+            this.electedLeader = participantState.GetServerId();
             filter = new LeaderFilter(messageQueue, election, this);
         }
 
@@ -133,6 +135,30 @@ namespace NZab
                 ChangePhase(Phase.BROADCASTING);
                 Broadcasting();
             }
+            catch (TimeoutException)
+            {
+                LOG.LogDebug("Didn't hear message from peers for {timeout} milliseconds. Going back to leader election.",
+                             this.config.GetTimeoutMs());
+            }
+            catch (ThreadInterruptedException)
+            {
+                LOG.LogDebug("Participant is canceled by user.");
+                throw;
+            }
+            catch (BackToElectionException)
+            {
+                LOG.LogDebug("Got GO_BACK message from queue, going back to electing.");
+            }
+            catch (Participant.LeftCluster e)
+            {
+                LOG.LogDebug("Exit running: {message}", e.Message);
+                throw;
+            }
+            catch (Exception e)
+            {
+                LOG.LogError(e, "Caught exception");
+                throw;
+            }
             finally
             {
                 ChangePhase(Phase.FINALIZING);
@@ -147,7 +173,9 @@ namespace NZab
                 WaitProposedEpochFromQuorum();
                 ProposeNewEpoch();
                 WaitEpochAckFromQuorum();
+                LOG.LogDebug("Established new epoch {epoch}", persistence.GetProposedEpoch());
                 string peerId = SelectSyncHistoryOwner();
+                LOG.LogDebug("Chose {peer} to pull its history.", peerId);
 
                 ChangePhase(Phase.SYNCHRONIZING);
                 if (!peerId.Equals(this.serverId))
@@ -173,11 +201,41 @@ namespace NZab
                 }
                 Broadcasting();
             }
+            catch (TimeoutException)
+            {
+                LOG.LogDebug("Didn't hear message from peers for {timeout} milliseconds. Going back to leader election.",
+                             this.config.GetTimeoutMs());
+            }
+            catch (ThreadInterruptedException)
+            {
+                LOG.LogDebug("Participant is canceled by user.");
+                throw;
+            }
+            catch (BackToElectionException)
+            {
+                LOG.LogDebug("Got GO_BACK message from queue, going back to electing.");
+            }
+            catch (Zab.SimulatedException)
+            {
+                LOG.LogDebug("Got SimulatedException, go back to leader election.");
+            }
+            catch (Participant.LeftCluster e)
+            {
+                LOG.LogDebug("Exit running: {message}", e.Message);
+                throw;
+            }
+            catch (Exception e)
+            {
+                LOG.LogError(e, "Caught exception");
+                throw;
+            }
             finally
             {
                 if (this.currentPhase == Phase.SYNCHRONIZING)
                 {
                     IncSyncTimeout();
+                    LOG.LogDebug("Go back to recovery in synchronization phase, increase sync timeout to {timeout} milliseconds.",
+                                 GetSyncTimeoutMs());
                 }
                 ChangePhase(Phase.FINALIZING);
             }
@@ -378,8 +436,11 @@ namespace NZab
                     else
                     {
                         HandleMessageFromQuorum(tuple);
-                        PeerHandler ph = quorumMap[source];
-                        ph.UpdateHeartbeatTime();
+                        PeerHandler ph;
+                        if (quorumMap.TryGetValue(source, out ph) && ph != null)
+                        {
+                            ph.UpdateHeartbeatTime();
+                        }
                         CheckFollowerLiveness();
                     }
                 }
@@ -443,6 +504,10 @@ namespace NZab
             }
             else if (msg.type == Message.MessageType.FLUSH_REQ) OnFlushReq(tuple);
             else if (msg.type == Message.MessageType.FLUSH) OnFlush(tuple);
+            else if (msg.type == Message.MessageType.HEARTBEAT)
+            {
+                LOG.LogTrace("Got HEARTBEAT replies from {source}", source);
+            }
             else if (msg.type == Message.MessageType.PROPOSAL) OnProposal(tuple);
             else if (msg.type == Message.MessageType.COMMIT) OnCommit(tuple);
             else if (msg.type == Message.MessageType.REMOVE)
