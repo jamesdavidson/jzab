@@ -17,6 +17,7 @@
  */
 
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -109,6 +110,12 @@ namespace NZab
      */
     internal class DivergingTuple
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(DivergingTuple));
+
         private readonly ILogIterator iter;
         private readonly Zxid zxid;
 

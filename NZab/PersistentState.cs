@@ -23,6 +23,8 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -30,6 +32,12 @@ namespace NZab
      */
     internal class PersistentState
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(PersistentState));
+
         protected ILog log;
         private readonly string fAckEpoch;
         private readonly string fProposedEpoch;

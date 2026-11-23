@@ -20,6 +20,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using jzab;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -28,6 +29,12 @@ namespace NZab
      */
     internal class PeerHandler
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(PeerHandler));
+
         protected long lastProposedEpoch = -1;
         protected long lastAckedEpoch = -1;
         protected long lastHeartbeatTimeNs;

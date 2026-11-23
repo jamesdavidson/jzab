@@ -17,6 +17,7 @@
  */
 
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -25,6 +26,12 @@ namespace NZab
      */
     internal sealed class DaemonThreadFactory
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(DaemonThreadFactory));
+
         public static readonly DaemonThreadFactory FACTORY = new DaemonThreadFactory();
 
         private DaemonThreadFactory()

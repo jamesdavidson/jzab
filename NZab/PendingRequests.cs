@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -25,6 +26,12 @@ namespace NZab
      */
     public class PendingRequests
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(PendingRequests));
+
         internal PendingRequests() { }
 
         /**

@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using jzab;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -31,6 +33,12 @@ namespace NZab
      */
     public class Zab
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(Zab));
+
         /**
          * Task for background "main" thread.
          */

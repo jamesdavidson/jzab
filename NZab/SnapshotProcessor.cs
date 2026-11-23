@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 using jzab;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -30,6 +31,12 @@ namespace NZab
      */
     internal class SnapshotProcessor : RequestProcessor
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(SnapshotProcessor));
+
         private readonly BlockingCollection<MessageTuple> requestQueue = new BlockingCollection<MessageTuple>();
         private readonly StateMachine stateMachine;
         private readonly PersistentState persistence;

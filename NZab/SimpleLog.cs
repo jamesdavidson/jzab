@@ -20,6 +20,8 @@ using System;
 using System.IO;
 using System.Net;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -27,6 +29,12 @@ namespace NZab
      */
     internal class SimpleLog : ILog
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(SimpleLog));
+
         private readonly string logFilePath;
         private readonly FileStream fout;
         private readonly BinaryWriter logStream;

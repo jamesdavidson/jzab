@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+using Microsoft.Extensions.Logging;
 using JMessage = jzab.Message;
 using JZxid = jzab.Zxid;
 using JClusterConfiguration = jzab.ClusterConfiguration;
@@ -27,6 +28,12 @@ namespace NZab
      */
     internal static class MessageBuilder
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(MessageBuilder));
+
         /**
          * Converts Zxid object to protobuf Zxid object.
          */

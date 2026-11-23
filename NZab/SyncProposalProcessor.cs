@@ -20,6 +20,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using jzab;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -29,6 +30,12 @@ namespace NZab
      */
     internal class SyncProposalProcessor : RequestProcessor
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(SyncProposalProcessor));
+
         private readonly ILog log;
         private readonly PersistentState persistence;
         private readonly BlockingCollection<MessageTuple> proposalQueue = new BlockingCollection<MessageTuple>();

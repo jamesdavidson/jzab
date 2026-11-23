@@ -22,6 +22,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.IO;
+using Microsoft.Extensions.Logging;
 using ProtoBuf;
 
 namespace NZab
@@ -31,6 +32,12 @@ namespace NZab
      */
     public class ClusterConfiguration : ICloneable
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(ClusterConfiguration));
+
         private Zxid version;
         private readonly HashSet<string> peers;
         private readonly string serverId;

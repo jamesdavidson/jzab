@@ -20,6 +20,7 @@ using System;
 using System.Collections.Specialized;
 using System.IO;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -28,6 +29,12 @@ namespace NZab
      */
     internal static class FileUtils
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(FileUtils));
+
         /**
          * Atomically writes a long integer to a file.
          *

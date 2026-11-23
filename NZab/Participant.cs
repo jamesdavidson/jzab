@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.IO;
 using jzab;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -29,6 +31,12 @@ namespace NZab
      */
     internal abstract class Participant
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(Participant));
+
         protected readonly Transport transport;
         protected readonly PersistentState persistence;
         protected readonly StateMachine stateMachine;
@@ -103,6 +111,7 @@ namespace NZab
                 }
                 pendings.PendingSends.Add(new PendingRequests.Tuple(request, ctx));
                 Message msg = MessageBuilder.BuildRequest(request);
+                Console.WriteLine($"electedLeader: {electedLeader} on serverId {serverId}");
                 SendMessage(this.electedLeader, msg);
             }
         }

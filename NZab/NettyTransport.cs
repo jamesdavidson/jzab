@@ -43,7 +43,11 @@ namespace NZab
      */
     internal class NettyTransport : Transport
     {
-        private static readonly ILogger LOG = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<NettyTransport>();
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(NettyTransport));
         static readonly AttributeKey<string> SENDER = AttributeKey<string>.ValueOf("remote");
 
         private readonly string hostPort;
@@ -425,6 +429,10 @@ namespace NZab
 
         public override void Send(string destination, Message message)
         {
+            if (destination is null)
+            {
+                Console.WriteLine("why is destination null?");
+            }
             if (destination.Equals(hostPort))
             {
                 // The message is being sent to itself. Don't bother going over TCP.

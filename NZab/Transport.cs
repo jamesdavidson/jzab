@@ -19,6 +19,8 @@
 using System.Collections.Generic;
 using jzab;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -33,6 +35,12 @@ namespace NZab
      */
     internal abstract class Transport
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(Transport));
+
         protected Receiver receiver;
 
         public Transport(Receiver r)

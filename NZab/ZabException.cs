@@ -18,6 +18,8 @@
 
 using System;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -25,6 +27,12 @@ namespace NZab
      */
     public abstract class ZabException : Exception
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(ZabException));
+
         protected ZabException() { }
 
         protected ZabException(string desc) : base(desc) { }

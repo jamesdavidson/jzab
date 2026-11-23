@@ -23,6 +23,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using jzab;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -31,6 +32,12 @@ namespace NZab
      */
     internal class CommitProcessor : RequestProcessor
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(CommitProcessor));
+
         private readonly BlockingCollection<MessageTuple> commitQueue = new BlockingCollection<MessageTuple>();
         private readonly StateMachine stateMachine;
         private Zxid lastDeliveredZxid = Zxid.ZXID_NOT_EXIST;

@@ -31,9 +31,11 @@ namespace NZab
      */
     internal class FastLeaderElection : Election
     {
-        private static readonly ILogger LOG =
-            LoggerFactory.Create(builder => builder.AddConsole())
-                         .CreateLogger<FastLeaderElection>();
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(FastLeaderElection));
 
         // Fast leader election needs transport to exchange vote information.
         internal readonly Transport transport;

@@ -18,6 +18,8 @@
 
 using System.IO;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -25,6 +27,12 @@ namespace NZab
      */
     public class ZabConfig
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(ZabConfig));
+
         /**
          * Maximum number of pending requests allowed for each server.
          */

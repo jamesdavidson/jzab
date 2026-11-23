@@ -17,6 +17,7 @@
  */
 
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -25,6 +26,12 @@ namespace NZab
      */
     public class Transaction
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(Transaction));
+
         private readonly Zxid zxid;
         private readonly byte[] body;
         private readonly int type;

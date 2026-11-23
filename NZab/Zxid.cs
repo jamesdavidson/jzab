@@ -19,6 +19,7 @@
 using System;
 using System.IO;
 using System.Net;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -27,6 +28,12 @@ namespace NZab
      */
     public class Zxid : IComparable<Zxid>
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(Zxid));
+
         private readonly long epoch;
         private readonly long xid;
         private const int ZXID_LENGTH = 16;

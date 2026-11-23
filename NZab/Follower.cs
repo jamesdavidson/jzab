@@ -23,6 +23,8 @@ using System.IO;
 using System.Threading;
 using jzab;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -30,6 +32,12 @@ namespace NZab
      */
     internal class Follower : Participant
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(Follower));
+
         private long ackEpoch;
 
         public Follower(ParticipantState participantState,

@@ -17,6 +17,7 @@
  */
 
 using jzab;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -25,6 +26,12 @@ namespace NZab
      */
     internal class MessageTuple
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(MessageTuple));
+
         private readonly string serverId;
         private readonly Message message;
         private Zxid zxid;

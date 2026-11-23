@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Concurrent;
 using jzab;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -27,6 +28,12 @@ namespace NZab
      */
     internal class ElectionMessageFilter : MessageQueueFilter
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(ElectionMessageFilter));
+
         protected readonly Election election;
 
         public ElectionMessageFilter(BlockingCollection<MessageTuple> messageQueue, Election election)

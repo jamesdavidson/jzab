@@ -22,6 +22,8 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -29,6 +31,12 @@ namespace NZab
      */
     internal class RollingLog : ILog
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(RollingLog));
+
         private readonly long rollingSize;
         private readonly List<string> logFiles = new List<string>();
         private SimpleLog currentLog;

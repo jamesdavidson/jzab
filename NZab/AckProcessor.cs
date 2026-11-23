@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using jzab;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -31,6 +32,12 @@ namespace NZab
      */
     internal class AckProcessor : RequestProcessor
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(AckProcessor));
+
         private readonly BlockingCollection<MessageTuple> ackQueue = new BlockingCollection<MessageTuple>();
         private readonly IDictionary<string, PeerHandler> quorumMapOriginal;
         private readonly IDictionary<string, PeerHandler> quorumMap;

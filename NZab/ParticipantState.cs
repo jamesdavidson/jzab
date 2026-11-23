@@ -18,6 +18,7 @@
 
 using System.Collections.Concurrent;
 using jzab;
+using Microsoft.Extensions.Logging;
 
 namespace NZab
 {
@@ -27,6 +28,12 @@ namespace NZab
      */
     internal class ParticipantState
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole();
+            b.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(ParticipantState));
+
         /**
          * Persistent variables for Zab.
          */

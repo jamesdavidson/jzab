@@ -23,6 +23,8 @@ using System.IO;
 using System.Linq;
 using jzab;
 
+using Microsoft.Extensions.Logging;
+
 namespace NZab
 {
     /**
@@ -30,6 +32,12 @@ namespace NZab
      */
     internal class Leader : Participant
     {
+        private static readonly ILogger LOG = LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole();
+            builder.SetMinimumLevel(LogLevel.Debug);
+        }).CreateLogger(typeof(Leader));
+
         private readonly ConcurrentDictionary<string, PeerHandler> quorumMap =
           new ConcurrentDictionary<string, PeerHandler>();
 
