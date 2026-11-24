@@ -38,8 +38,6 @@ namespace NZab
             builder.SetMinimumLevel(LogLevel.Debug);
         }).CreateLogger(typeof(Follower));
 
-        private long ackEpoch;
-
         public Follower(ParticipantState participantState,
                         StateMachine stateMachine,
                         ZabConfig config)
@@ -102,12 +100,14 @@ namespace NZab
 
         public override void Join(string peer)
         {
+            LOG.LogDebug("Follower joins in.");
             try
             {
                 Message query = MessageBuilder.BuildQueryLeader();
                 MessageTuple tuple = null;
                 while (true)
                 {
+                    LOG.LogDebug("Query leader from {peer}", peer);
                     try
                     {
                         SendMessage(peer, query);
@@ -116,10 +116,12 @@ namespace NZab
                     }
                     catch (TimeoutException)
                     {
+                        LOG.LogWarning("Timeout while contacting leader, going to retry after {retryInterval} second.", 1);
                         Thread.Sleep(1000);
                     }
                 }
                 this.electedLeader = tuple.GetMessage().reply.leader;
+                LOG.LogDebug("Got current leader {leader}", this.electedLeader);
 
                 while (true)
                 {
@@ -130,6 +132,9 @@ namespace NZab
                     }
                     catch (Exception ex) when (ex is TimeoutException || ex is BackToElectionException)
                     {
+                        LOG.LogDebug("Timeout({timeout} ms) in synchronizing, retrying. Last zxid: {zxid}",
+                                     GetSyncTimeoutMs(),
+                                     persistence.GetLatestZxid());
                         transport.Clear(electedLeader);
                         ClearMessageQueue();
                     }
@@ -140,6 +145,39 @@ namespace NZab
                 this.election.SpecifyLeader(this.electedLeader);
                 ChangePhase(Phase.BROADCASTING);
                 Accepting();
+            }
+            catch (ThreadInterruptedException)
+            {
+                LOG.LogDebug("Participant is canceled by user.");
+                throw;
+            }
+            catch (TimeoutException)
+            {
+                LOG.LogDebug("Didn't hear message from {leader} for {timeout} milliseconds. Going back to leader election.",
+                             this.electedLeader,
+                             this.config.GetTimeoutMs());
+                if (persistence.GetLastSeenConfig() == null)
+                {
+                    throw new JoinFailure("Fails to join cluster.");
+                }
+            }
+            catch (BackToElectionException)
+            {
+                LOG.LogDebug("Got GO_BACK message from queue, going back to electing.");
+                if (persistence.GetLastSeenConfig() == null)
+                {
+                    throw new JoinFailure("Fails to join cluster.");
+                }
+            }
+            catch (Participant.LeftCluster e)
+            {
+                LOG.LogDebug("Exit running: {message}", e.Message);
+                throw;
+            }
+            catch (Exception e)
+            {
+                LOG.LogError(e, "Caught exception");
+                throw;
             }
             finally
             {
@@ -156,6 +194,7 @@ namespace NZab
                 SendProposedEpoch();
                 WaitForNewEpoch();
 
+                LOG.LogDebug("Synchronizing...");
                 ChangePhase(Phase.SYNCHRONIZING);
                 long st = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                 WaitForSync(this.electedLeader);
@@ -170,11 +209,42 @@ namespace NZab
                 ChangePhase(Phase.BROADCASTING);
                 Accepting();
             }
+            catch (ThreadInterruptedException)
+            {
+                LOG.LogDebug("Participant is canceled by user.");
+                throw;
+            }
+            catch (TimeoutException)
+            {
+                LOG.LogDebug("Didn't hear message from {leader} for {timeout} milliseconds. Going back to leader election.",
+                             this.electedLeader,
+                             this.config.GetTimeoutMs());
+            }
+            catch (BackToElectionException)
+            {
+                LOG.LogDebug("Got GO_BACK message from queue, going back to electing.");
+            }
+            catch (Zab.SimulatedException)
+            {
+                LOG.LogDebug("Got SimulatedException, go back to leader election.");
+            }
+            catch (Participant.LeftCluster e)
+            {
+                LOG.LogDebug("Exit running: {message}", e.Message);
+                throw;
+            }
+            catch (Exception e)
+            {
+                LOG.LogError(e, "Caught exception");
+                throw;
+            }
             finally
             {
                 if (this.currentPhase == Phase.SYNCHRONIZING)
                 {
                     IncSyncTimeout();
+                    LOG.LogDebug("Go back to recovery in synchronization phase, increase sync timeout to {timeout} milliseconds.",
+                                 GetSyncTimeoutMs());
                 }
                 ChangePhase(Phase.FINALIZING);
             }
@@ -186,6 +256,7 @@ namespace NZab
                                                                 persistence.GetAckEpoch(),
                                                                 persistence.GetLastSeenConfig(),
                                                                 GetSyncTimeoutMs());
+            LOG.LogDebug("Sends {message} to leader {leader}", message, this.electedLeader);
             SendMessage(this.electedLeader, message);
         }
 
@@ -195,10 +266,17 @@ namespace NZab
             var epoch = tuple.GetMessage().new_epoch;
             if (epoch.new_epoch < persistence.GetProposedEpoch())
             {
+                LOG.LogError("New epoch {newEpoch} from {source} is smaller than last received proposed epoch {proposedEpoch}",
+                             epoch.new_epoch,
+                             tuple.GetServerId(),
+                             persistence.GetProposedEpoch());
                 throw new Exception("New epoch is smaller than current one.");
             }
             persistence.SetProposedEpoch(epoch.new_epoch);
             SetSyncTimeoutMs(epoch.sync_timeout);
+            LOG.LogDebug("Received the new epoch proposal {epoch} from {source}.",
+                         epoch.new_epoch,
+                         tuple.GetServerId());
             Zxid zxid = persistence.GetLatestZxid();
             SendMessage(this.electedLeader, MessageBuilder.BuildAckEpoch(persistence.GetAckEpoch(), zxid));
         }
@@ -206,20 +284,28 @@ namespace NZab
         void WaitForNewLeaderMessage()
         {
             MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.NEW_LEADER, this.electedLeader, config.GetTimeoutMs());
+            LOG.LogDebug("Waiting for New Leader message from {leader}.", this.electedLeader);
+            LOG.LogDebug("Got message {message} from {source}.",
+                         tuple.GetMessage(),
+                         tuple.GetServerId());
             long epoch = tuple.GetMessage().new_leader.epoch;
             persistence.GetLog().Sync();
             persistence.SetAckEpoch(epoch);
             Message ack = MessageBuilder.BuildAck(persistence.GetLatestZxid());
-            SendMessage(this.electedLeader, ack);
+            SendMessage(tuple.GetServerId(), ack);
         }
 
         void WaitForCommitMessage()
         {
             MessageTuple tuple = filter.GetExpectedMessage(Message.MessageType.COMMIT, this.electedLeader, config.GetTimeoutMs());
+            LOG.LogDebug("Waiting for commit message from {leader}", this.electedLeader);
             Zxid zxid = MessageBuilder.FromProtoZxid(tuple.GetMessage().commit.zxid);
             Zxid lastZxid = persistence.GetLatestZxid();
             if (zxid.CompareTo(lastZxid) != 0)
             {
+                LOG.LogError("The ACK zxid {zxid} doesn't match last zxid {lastZxid} in log!",
+                             zxid,
+                             lastZxid);
                 throw new Exception("The ACK zxid doesn't match last zxid");
             }
         }
@@ -254,10 +340,13 @@ namespace NZab
                         long timeDiff = (DateTime.Now.Ticks * 100 - lastHeartbeatTime) / 1000000L;
                         if ((int)timeDiff >= this.config.GetTimeoutMs())
                         {
+                            LOG.LogWarning("Detects there's a timeout in waiting message from leader {leader}, goes back to leader electing",
+                                           this.electedLeader);
                             throw new TimeoutException("HEARTBEAT timeout!");
                         }
                         if (msg.type == Message.MessageType.QUERY_LEADER)
                         {
+                            LOG.LogDebug("Got QUERY_LEADER from {source}", source);
                             Message reply = MessageBuilder.BuildQueryReply(this.electedLeader);
                             SendMessage(source, reply);
                         }
@@ -277,9 +366,17 @@ namespace NZab
                         {
                             commitProcessor.ProcessRequest(tuple);
                         }
+                        else
+                        {
+                            LOG.LogDebug("Got unexpected message from {source}, ignores.", source);
+                        }
                         continue;
                     }
 
+                    if (msg.type != Message.MessageType.HEARTBEAT)
+                    {
+                        LOG.LogDebug("Got message {message} from {source}", msg, source);
+                    }
                     if (msg.type == Message.MessageType.PROPOSAL)
                     {
                         Transaction txn = MessageBuilder.FromProposal(msg.proposal);
@@ -289,6 +386,9 @@ namespace NZab
                         }
                         else
                         {
+                            LOG.LogDebug("The proposal has the wrong epoch {epoch}, expecting {ackEpoch}.",
+                                         txn.GetZxid().GetEpoch(),
+                                         ackEpoch);
                             throw new Exception("The proposal has wrong epoch number.");
                         }
                     }
@@ -298,12 +398,17 @@ namespace NZab
                     }
                     else if (msg.type == Message.MessageType.HEARTBEAT)
                     {
+                        LOG.LogTrace("Got HEARTBEAT from {source}.", source);
                         Message heartbeatReply = MessageBuilder.BuildHeartbeat();
                         SendMessage(source, heartbeatReply);
                     }
                     else if (msg.type == Message.MessageType.FLUSH)
                     {
                         OnFlush(tuple);
+                    }
+                    else
+                    {
+                        LOG.LogWarning("Unexpected message: {message} from {source}", msg, source);
                     }
                 }
             }
@@ -326,6 +431,7 @@ namespace NZab
             WaitForSync(this.electedLeader);
 
             Zxid lastZxid = persistence.GetLatestZxid();
+            LOG.LogDebug("After first synchronization, the last zxid is {zxid}", lastZxid);
             Message join = MessageBuilder.BuildJoin(lastZxid);
             SendMessage(this.electedLeader, join);
 
@@ -359,15 +465,18 @@ namespace NZab
                         string peerId = tuple.GetMessage().disconnected.server_id;
                         if (follower.electedLeader != null && peerId.Equals(follower.electedLeader))
                         {
+                            LOG.LogDebug("Lost elected leader {leader}.", follower.electedLeader);
                             throw new BackToElectionException();
                         }
                         else
                         {
+                            LOG.LogDebug("Lost peer {peer}.", peerId);
                             follower.transport.Clear(peerId);
                         }
                     }
                     else if (tuple.GetMessage().type == Message.MessageType.PROPOSED_EPOCH)
                     {
+                        LOG.LogDebug("Got PROPOSED_EPOCH in FOLLOWING state. Close connection.");
                         follower.transport.Clear(tuple.GetServerId());
                     }
                     else return tuple;
